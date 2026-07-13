@@ -104,7 +104,7 @@ void main() async {
         .addMiddleware(authMiddleware())
         .addHandler(router.call);
 
-    final server = await io.serve(handler, 'localhost', 5000);
+    final server = await io.serve(handler, '0.0.0.0', 5000);
     print('LDAP Tool läuft auf http://localhost:${server.port}');
     print('Browser öffnen: http://localhost:${server.port}');
     print('Zum Beenden: dieses Fenster schliessen.');
