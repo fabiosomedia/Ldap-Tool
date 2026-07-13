@@ -1,0 +1,14 @@
+name: ldap_tool
+description: Web-based LDAP tool for Active Directory management.
+version: 1.0.0
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  path: ^1.9.0
+  shelf: ^1.4.0
+  shelf_router: ^1.1.0
+  shelf_static: ^1.1.0
+  dartdap: ^0.11.0
+  dotenv: ^4.2.0

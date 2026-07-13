@@ -1,0 +1,16 @@
+# https://dart.dev/tools/private-files
+# Created by `dart pub`
+.dart_tool/
+
+# Lokale Konfiguration – NIEMALS committen
+.env
+
+# Build-Output
+build/
+*.exe
+
+# Laufzeit-Daten – NIEMALS committen
+bin/audit.jsonl
+bin/sessions.json
+bin/notes.json
+*.jsonl
