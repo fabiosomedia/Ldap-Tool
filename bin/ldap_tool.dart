@@ -7,6 +7,23 @@ import 'package:ldap_tool/auth.dart';
 import 'package:ldap_tool/config.dart';
 import 'package:ldap_tool/routes.dart';
 import 'package:ldap_tool/templates.dart';
+import 'package:ldap_tool/email_service.dart';
+
+void _startWeeklyMailer(Config config) {
+  String? _lastSentDate;
+
+  Timer.periodic(const Duration(minutes: 30), (_) async {
+    final now = DateTime.now();
+    // Jeden Montag zwischen 07:00 und 07:30 Uhr
+    if (now.weekday != DateTime.monday) return;
+    if (now.hour != 7) return;
+    final todayKey = '${now.year}-${now.month}-${now.day}';
+    if (_lastSentDate == todayKey) return;
+    _lastSentDate = todayKey;
+    print('[Wochen-Report] Starte Versand...');
+    await sendWeeklyReport(config);
+  });
+}
 
 Middleware authMiddleware() => (Handler inner) => (Request req) async {
   final path = req.url.path;
@@ -77,9 +94,7 @@ void main() async {
       ..get('/users/no-email', (Request r) => handleUsersNoEmail(r, config))
       ..get('/user/compare', (Request r) => handleUserCompare(r, config))
       ..get('/user/groups-effective', (Request r) => handleEffectiveGroups(r, config))
-      ..get('/bulk/csv', handleBulkCsvForm)
-      ..post('/bulk/csv', (Request r) => handleBulkCsvPost(r, config))
-      ..get('/computers', (Request r) => handleComputers(r, config))
+..get('/computers', (Request r) => handleComputers(r, config))
       ..post('/computer/move-lager', (Request r) => handleComputerMoveLager(r, config))
       ..get('/search/advanced', (Request r) => handleAdvancedSearch(r, config))
       ..post('/favorite/toggle', handleFavoriteToggle)
@@ -87,8 +102,6 @@ void main() async {
       ..get('/directory', (Request r) => handleDirectory(r, config))
       ..get('/export/directory', (Request r) => handleExportDirectory(r, config))
       ..get('/stats/departments', (Request r) => handleDeptStats(r, config))
-      ..get('/bulk/pwreset', (Request r) => handleBulkPwResetForm(r, config))
-      ..post('/bulk/pwreset', (Request r) => handleBulkPwResetPost(r, config))
       ..get('/users/expiring-accounts', (Request r) => handleExpiringAccounts(r, config))
       ..get('/user/notes', handleGetNote)
       ..post('/user/notes', handleSetNote)
@@ -97,12 +110,18 @@ void main() async {
       ..post('/config', (Request r) => handleConfigPost(r, config))
       ..get('/admin/roles', handleRolesPage)
       ..post('/admin/roles', handleRolesPost)
-      ..get('/health', (Request r) => handleHealth(r, config));
+      ..get('/health', (Request r) => handleHealth(r, config))
+      ..get('/admin/test-mail', (Request r) async {
+        await sendWeeklyReport(config);
+        return Response.found('/settings?msg=testmail');
+      });
 
     final handler = Pipeline()
         .addMiddleware(logRequests())
         .addMiddleware(authMiddleware())
         .addHandler(router.call);
+
+    _startWeeklyMailer(config);
 
     final server = await io.serve(handler, '0.0.0.0', 5000);
     print('LDAP Tool läuft auf http://localhost:${server.port}');

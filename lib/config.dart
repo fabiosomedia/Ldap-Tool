@@ -12,6 +12,17 @@ class Config {
   String lagerOu;
   List<String> computerPrefixes;
 
+  // SMTP (optional, für Wochen-Report)
+  String smtpHost;
+  int smtpPort;
+  bool smtpSsl;
+  String smtpUser;
+  String smtpPassword;
+  String smtpFrom;
+  String smtpTo;
+
+  bool get smtpConfigured => smtpHost.isNotEmpty && smtpTo.isNotEmpty;
+
   Config({
     required this.server,
     required this.bindUser,
@@ -22,6 +33,13 @@ class Config {
     required this.adminOu,
     required this.lagerOu,
     required this.computerPrefixes,
+    this.smtpHost = '',
+    this.smtpPort = 587,
+    this.smtpSsl = false,
+    this.smtpUser = '',
+    this.smtpPassword = '',
+    this.smtpFrom = '',
+    this.smtpTo = '',
   });
 
   String get displayDomain {
@@ -71,6 +89,13 @@ class Config {
       adminOu: env['ADMIN_OU'] ?? '',
       lagerOu: env['LAGER_OU'] ?? '',
       computerPrefixes: prefixes,
+      smtpHost: env['SMTP_HOST'] ?? '',
+      smtpPort: int.tryParse(env['SMTP_PORT'] ?? '587') ?? 587,
+      smtpSsl: env['SMTP_SSL'] == 'true',
+      smtpUser: env['SMTP_USER'] ?? '',
+      smtpPassword: env['SMTP_PASSWORD'] ?? '',
+      smtpFrom: env['SMTP_FROM'] ?? '',
+      smtpTo: env['SMTP_TO'] ?? '',
     );
   }
 

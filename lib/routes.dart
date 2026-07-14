@@ -38,19 +38,22 @@ const _html = {
   'content-type': 'text/html; charset=utf-8',
   'cache-control': 'no-store',
 };
+
+// Alle HTML-Responses explizit als UTF-8 Bytes senden (shelf default ist latin1)
+Response _ok(String html) => Response.ok(html, headers: _html, encoding: utf8);
 SessionData? _session(Request req) => getSession(extractToken(req.headers['cookie']));
 
 // â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 Response handleLoginPage(Request req) =>
-    Response.ok(renderLogin(null), headers: _html);
+    _ok(renderLogin(null));
 
 Future<Response> handleLoginPost(Request req, Config config) async {
   final params = Uri.splitQueryString(await req.readAsString());
   // Login braucht keinen CSRF-Check (Session existiert noch nicht)
   final (error, data) = await tryLogin(config, params['username'] ?? '', params['password'] ?? '');
   if (error != null || data == null) {
-    return Response.ok(renderLogin(error ?? 'Unbekannter Fehler.'), headers: _html);
+    return _ok(renderLogin(error ?? 'Unbekannter Fehler.'));
   }
   return Response.found('/', headers: {
     'set-cookie': 'session=${createSession(data)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=86400',
@@ -71,7 +74,7 @@ Response handleIndex(Request req) {
   final token = extractToken(req.headers['cookie']);
   final session = getSession(token);
   final history = getSearchHistory(token);
-  return Response.ok(renderIndex(session?.username ?? '', searchHistory: history), headers: _html);
+  return _ok(renderIndex(session?.username ?? '', searchHistory: history));
 }
 
 Future<Response> handleDashboard(Request req, Config config) async {
@@ -82,9 +85,9 @@ Future<Response> handleDashboard(Request req, Config config) async {
   try {
     final stats = await LdapClient(config, session).getDashboardStats();
     final favs = getFavorites(token);
-    return Response.ok(renderDashboard(session.username, stats, getAuditLog().take(6).toList(), favorites: favs, csrfToken: csrfToken), headers: _html);
+    return _ok(renderDashboard(session.username, stats, getAuditLog().take(6).toList(), favorites: favs, csrfToken: csrfToken));
   } catch (e) {
-    return Response.ok(renderDashboard(session.username, {}, [], favorites: [], csrfToken: csrfToken), headers: _html);
+    return _ok(renderDashboard(session.username, {}, [], favorites: [], csrfToken: csrfToken));
   }
 }
 
@@ -101,10 +104,10 @@ Future<Response> handleSearch(Request req, Config config) async {
   try {
     final results = await LdapClient(config, session).searchUsers(q);
     final history = getSearchHistory(token);
-    if (q.isEmpty && results.isEmpty) return Response.ok(renderIndex(session.username, searchHistory: history), headers: _html);
-    return Response.ok(renderResults(session.username, q, results, searchHistory: history), headers: _html);
+    if (q.isEmpty && results.isEmpty) return _ok(renderIndex(session.username, searchHistory: history));
+    return _ok(renderResults(session.username, q, results, searchHistory: history));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Suche fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Suche fehlgeschlagen: $e'));
   }
 }
 
@@ -120,7 +123,7 @@ Future<Response> handleUserDetail(Request req, Config config) async {
   try {
     final client = LdapClient(config, session);
     final user = await client.getUserDetails(dn);
-    if (user == null) return Response.ok(renderError(session.username, 'User nicht gefunden.'), headers: _html);
+    if (user == null) return _ok(renderError(session.username, 'User nicht gefunden.'));
     final maxPwdAgeDays = await client.getDomainMaxPwdAge();
     final clipboard = getClipboard(token);
     if (req.url.queryParameters['msg'] != null) {
@@ -131,12 +134,12 @@ Future<Response> handleUserDetail(Request req, Config config) async {
     final favs = getFavorites(token);
     final isFav = favs.any((f) => f.dn.toLowerCase() == dn.toLowerCase());
     final userNote = getUserNote(dn);
-    return Response.ok(renderUserDetail(session.username, user, back,
+    return _ok(renderUserDetail(session.username, user, back,
         clipboard: clipboard, maxPwdAgeDays: maxPwdAgeDays,
         isOwnUser: isOwnUser, readOnlySelf: readOnlySelf, isFavorite: isFav,
-        note: userNote), headers: _html);
+        note: userNote));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'User laden fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'User laden fehlgeschlagen: $e'));
   }
 }
 
@@ -147,14 +150,14 @@ Future<Response> handleModify(Request req, Config config) async {
   final session = getSession(token);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) == UserRole.readonly) return Response.ok(renderError(session.username, 'Keine Berechtigung (readonly).'), headers: _html);
+  if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final dn = params['dn'] ?? '';
   final attribute = params['attribute'] ?? '';
   final value = params['value'] ?? '';
   final back = params['back'] ?? '';
   if (dn.isEmpty || attribute.isEmpty) return Response.badRequest(body: 'Fehlende Parameter');
   if (dn.toLowerCase() == session.dn.toLowerCase() && getSessionSetting(token, 'readonly_self')) {
-    return Response.ok(renderError(session.username, 'Nur-Lesen aktiv: eigener Account kann nicht bearbeitet werden.'), headers: _html);
+    return _ok(renderError(session.username, 'Nur-Lesen aktiv: eigener Account kann nicht bearbeitet werden.'));
   }
   try {
     await LdapClient(config, session).modifyUser(dn, attribute, value);
@@ -164,7 +167,7 @@ Future<Response> handleModify(Request req, Config config) async {
         : '/';
     return Response.found(redirect);
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Ã„nderung fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Ã„nderung fehlgeschlagen: $e'));
   }
 }
 
@@ -184,7 +187,7 @@ Future<Response> handlePhotoUpload(Request req, Config config) async {
     auditLog(session.username, 'Foto hochgeladen', dn);
     return Response.found('/user?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Foto-Upload fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Foto-Upload fehlgeschlagen: $e'));
   }
 }
 
@@ -200,7 +203,7 @@ Future<Response> handlePhotoDelete(Request req, Config config) async {
     auditLog(session.username, 'Foto gelÃ¶scht', dn);
     return Response.found('/user?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'LÃ¶schen fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'LÃ¶schen fehlgeschlagen: $e'));
   }
 }
 
@@ -211,10 +214,10 @@ Future<Response> handleLockedUsers(Request req, Config config) async {
   if (session == null) return Response.found('/login');
   try {
     final users = await LdapClient(config, session).getLockedUsers();
-    return Response.ok(renderQuickUsers(session.username, 'Gesperrte Benutzer',
-        'Benutzer mit aktivierter Kontosperre', users, extraCol: 'Entsperren'), headers: _html);
+    return _ok(renderQuickUsers(session.username, 'Gesperrte Benutzer',
+        'Benutzer mit aktivierter Kontosperre', users, extraCol: 'Entsperren'));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Fehler: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Fehler: $e'));
   }
 }
 
@@ -223,10 +226,10 @@ Future<Response> handleDisabledUsers(Request req, Config config) async {
   if (session == null) return Response.found('/login');
   try {
     final users = await LdapClient(config, session).getDisabledUsers();
-    return Response.ok(renderQuickUsers(session.username, 'Deaktivierte Benutzer',
-        'Benutzer mit deaktiviertem Konto', users, extraCol: 'Aktivieren'), headers: _html);
+    return _ok(renderQuickUsers(session.username, 'Deaktivierte Benutzer',
+        'Benutzer mit deaktiviertem Konto', users, extraCol: 'Aktivieren'));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Fehler: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Fehler: $e'));
   }
 }
 
@@ -235,10 +238,10 @@ Future<Response> handlePwExpiring(Request req, Config config) async {
   if (session == null) return Response.found('/login');
   try {
     final users = await LdapClient(config, session).getUsersExpiringPasswords();
-    return Response.ok(renderQuickUsers(session.username, 'Passwort lÃ¤uft bald ab',
-        'Passwort lÃ¤uft in den nÃ¤chsten 14 Tagen ab', users, extraCol: 'Tage'), headers: _html);
+    return _ok(renderQuickUsers(session.username, 'Passwort lÃ¤uft bald ab',
+        'Passwort lÃ¤uft in den nÃ¤chsten 14 Tagen ab', users, extraCol: 'Tage'));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Fehler: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Fehler: $e'));
   }
 }
 
@@ -252,9 +255,9 @@ Future<Response> handleGroups(Request req, Config config) async {
     final client = LdapClient(config, session);
     final groups = await client.searchGroups(q);
     final ous = await client.getOUs();
-    return Response.ok(renderGroups(session.username, q, groups, ous), headers: _html);
+    return _ok(renderGroups(session.username, q, groups, ous));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Gruppen laden fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Gruppen laden fehlgeschlagen: $e'));
   }
 }
 
@@ -266,9 +269,9 @@ Future<Response> handleGroupMembers(Request req, Config config) async {
   if (groupDn.isEmpty) return Response.found('/groups');
   try {
     final members = await LdapClient(config, session).getGroupMembers(groupDn);
-    return Response.ok(renderGroupMembers(session.username, groupName, groupDn, members), headers: _html);
+    return _ok(renderGroupMembers(session.username, groupName, groupDn, members));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Mitglieder laden fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Mitglieder laden fehlgeschlagen: $e'));
   }
 }
 
@@ -276,7 +279,7 @@ Future<Response> handleGroupAdd(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) == UserRole.readonly) return Response.ok(renderError(session.username, 'Keine Berechtigung (readonly).'), headers: _html);
+  if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final userDn = params['user_dn'] ?? '';
   final groupName = params['group_name'] ?? '';
   final back = params['back'] ?? '';
@@ -284,16 +287,16 @@ Future<Response> handleGroupAdd(Request req, Config config) async {
   try {
     final groups = await LdapClient(config, session).findGroupByName(groupName);
     if (groups.isEmpty) {
-      return Response.ok(renderError(session.username, 'Gruppe "$groupName" nicht gefunden.'), headers: _html);
+      return _ok(renderError(session.username, 'Gruppe "$groupName" nicht gefunden.'));
     }
     if (groups.length == 1) {
       await LdapClient(config, session).addUserToGroup(userDn, groups.first['dn']);
       auditLog(session.username, 'Gruppe hinzugefÃ¼gt: $groupName', userDn);
       return Response.found('/user?dn=${Uri.encodeComponent(userDn)}&q=${Uri.encodeComponent(back)}');
     }
-    return Response.ok(renderGroupPicker(session.username, userDn, back, groups, 'HinzufÃ¼gen'), headers: _html);
+    return _ok(renderGroupPicker(session.username, userDn, back, groups, 'HinzufÃ¼gen'));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Gruppe hinzufÃ¼gen fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Gruppe hinzufÃ¼gen fehlgeschlagen: $e'));
   }
 }
 
@@ -301,7 +304,7 @@ Future<Response> handleGroupAddConfirm(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) == UserRole.readonly) return Response.ok(renderError(session.username, 'Keine Berechtigung (readonly).'), headers: _html);
+  if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final userDn = params['user_dn'] ?? '';
   final groupDn = params['group_dn'] ?? '';
   final back = params['back'] ?? '';
@@ -311,7 +314,7 @@ Future<Response> handleGroupAddConfirm(Request req, Config config) async {
     auditLog(session.username, 'Gruppe hinzugefÃ¼gt', userDn, groupDn);
     return Response.found('/user?dn=${Uri.encodeComponent(userDn)}&q=${Uri.encodeComponent(back)}');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'HinzufÃ¼gen fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'HinzufÃ¼gen fehlgeschlagen: $e'));
   }
 }
 
@@ -319,7 +322,7 @@ Future<Response> handleGroupRemove(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) == UserRole.readonly) return Response.ok(renderError(session.username, 'Keine Berechtigung (readonly).'), headers: _html);
+  if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final userDn = params['user_dn'] ?? '';
   final groupDn = params['group_dn'] ?? '';
   final back = params['back'] ?? '';
@@ -329,7 +332,7 @@ Future<Response> handleGroupRemove(Request req, Config config) async {
     auditLog(session.username, 'Gruppe entfernt', userDn, groupDn);
     return Response.found('/user?dn=${Uri.encodeComponent(userDn)}&q=${Uri.encodeComponent(back)}');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Entfernen fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Entfernen fehlgeschlagen: $e'));
   }
 }
 
@@ -350,7 +353,7 @@ Future<Response> handleGroupsCopy(Request req, Config config) async {
     setClipboard(token!, GroupClipboard(userName, userDn, groups));
     return Response.found('/user?dn=${Uri.encodeComponent(userDn)}&q=${Uri.encodeComponent(back)}');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Kopieren fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Kopieren fehlgeschlagen: $e'));
   }
 }
 
@@ -359,12 +362,12 @@ Future<Response> handleGroupsPaste(Request req, Config config) async {
   final session = getSession(token);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) == UserRole.readonly) return Response.ok(renderError(session.username, 'Keine Berechtigung (readonly).'), headers: _html);
+  if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final userDn = params['user_dn'] ?? '';
   final back = params['back'] ?? '';
   if (userDn.isEmpty) return Response.badRequest(body: 'Fehlender DN');
   final clipboard = getClipboard(token);
-  if (clipboard == null) return Response.ok(renderError(session.username, 'Kein Gruppen-Clipboard vorhanden.'), headers: _html);
+  if (clipboard == null) return _ok(renderError(session.username, 'Kein Gruppen-Clipboard vorhanden.'));
 
   final client = LdapClient(config, session);
   final errors = <String>[];
@@ -376,8 +379,8 @@ Future<Response> handleGroupsPaste(Request req, Config config) async {
     }
   }
   if (errors.isNotEmpty) {
-    return Response.ok(renderError(session.username,
-        '${clipboard.groupDns.length - errors.length} von ${clipboard.groupDns.length} Gruppen Ã¼bernommen. Fehler bei: ${errors.join(', ')}'), headers: _html);
+    return _ok(renderError(session.username,
+        '${clipboard.groupDns.length - errors.length} von ${clipboard.groupDns.length} Gruppen Ã¼bernommen. Fehler bei: ${errors.join(', ')}'));
   }
   auditLog(session.username, 'Gruppen eingefÃ¼gt (${clipboard.groupDns.length})', userDn, 'von ${clipboard.sourceUsername}');
   return Response.found('/user?dn=${Uri.encodeComponent(userDn)}&q=${Uri.encodeComponent(back)}');
@@ -389,7 +392,7 @@ Future<Response> handleBulkGroupAdd(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) == UserRole.readonly) return Response.ok(renderError(session.username, 'Keine Berechtigung (readonly).'), headers: _html);
+  if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final userDns = (params['user_dns'] ?? '').split('\n').where((s) => s.isNotEmpty).toList();
   final groupName = params['group_name'] ?? '';
   final back = params['back'] ?? '';
@@ -398,14 +401,14 @@ Future<Response> handleBulkGroupAdd(Request req, Config config) async {
     final client = LdapClient(config, session);
     final groups = await client.findGroupByName(groupName);
     if (groups.isEmpty) {
-      return Response.ok(renderError(session.username, 'Gruppe "$groupName" nicht gefunden.'), headers: _html);
+      return _ok(renderError(session.username, 'Gruppe "$groupName" nicht gefunden.'));
     }
     final groupDn = groups.first['dn'] as String;
     await client.addUsersToGroup(userDns, groupDn);
     auditLog(session.username, 'Bulk-Gruppe hinzugefÃ¼gt: $groupName', '', '${userDns.length} User');
     return Response.found('/search?q=${Uri.encodeComponent(back)}');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Bulk-Aktion fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Bulk-Aktion fehlgeschlagen: $e'));
   }
 }
 
@@ -415,22 +418,22 @@ Future<Response> handlePasswordReset(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) == UserRole.readonly) return Response.ok(renderError(session.username, 'Keine Berechtigung (readonly).'), headers: _html);
+  if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final dn = params['dn'] ?? '';
   final password = params['password'] ?? '';
   final back = params['back'] ?? '';
   if (dn.isEmpty || password.isEmpty) return Response.badRequest(body: 'Fehlende Parameter');
   // Server-seitige Passwort-KomplexitÃ¤t prÃ¼fen
   if (!_isPasswordStrong(password)) {
-    return Response.ok(renderError(session.username,
-        'Passwort zu schwach. Mindestanforderungen: mind. 8 Zeichen, Gross- und Kleinbuchstaben, Zahl.'), headers: _html);
+    return _ok(renderError(session.username,
+        'Passwort zu schwach. Mindestanforderungen: mind. 8 Zeichen, Gross- und Kleinbuchstaben, Zahl.'));
   }
   try {
     await LdapClient(config, session).resetPassword(dn, password);
     auditLog(session.username, 'Passwort zurÃ¼ckgesetzt', dn);
     return Response.found('/user?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}&msg=pw_ok');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Passwort-Reset fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Passwort-Reset fehlgeschlagen: $e'));
   }
 }
 
@@ -438,7 +441,7 @@ Future<Response> handleAccountToggle(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) == UserRole.readonly) return Response.ok(renderError(session.username, 'Keine Berechtigung (readonly).'), headers: _html);
+  if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final dn = params['dn'] ?? '';
   final uac = int.tryParse(params['uac'] ?? '0') ?? 0;
   final disable = params['action'] == 'disable';
@@ -449,7 +452,7 @@ Future<Response> handleAccountToggle(Request req, Config config) async {
     auditLog(session.username, disable ? 'Account deaktiviert' : 'Account aktiviert', dn);
     return Response.found('/user?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Account-Ã„nderung fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Account-Ã„nderung fehlgeschlagen: $e'));
   }
 }
 
@@ -457,7 +460,7 @@ Future<Response> handleAccountUnlock(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) == UserRole.readonly) return Response.ok(renderError(session.username, 'Keine Berechtigung (readonly).'), headers: _html);
+  if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final dn = params['dn'] ?? '';
   final back = params['back'] ?? '';
   if (dn.isEmpty) return Response.badRequest(body: 'Fehlender DN');
@@ -466,7 +469,7 @@ Future<Response> handleAccountUnlock(Request req, Config config) async {
     auditLog(session.username, 'Account entsperrt', dn);
     return Response.found('/user?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Entsperren fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Entsperren fehlgeschlagen: $e'));
   }
 }
 
@@ -485,7 +488,7 @@ Future<Response> handleExportSearch(Request req, Config config) async {
       'content-disposition': 'attachment; filename="export_$q.csv"',
     });
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Export fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Export fehlgeschlagen: $e'));
   }
 }
 
@@ -502,7 +505,7 @@ Future<Response> handleExportGroup(Request req, Config config) async {
       'content-disposition': 'attachment; filename="export_$groupName.csv"',
     });
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Export fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Export fehlgeschlagen: $e'));
   }
 }
 
@@ -513,7 +516,8 @@ Response handleSettingsPage(Request req) {
   final session = getSession(token);
   if (session == null) return Response.found('/login');
   final settings = getSessionSettings(token);
-  return Response.ok(renderSettings(session.username, settings), headers: _html);
+  final msg = req.url.queryParameters['msg'];
+  return _ok(renderSettings(session.username, settings, msg: msg));
 }
 
 Future<Response> handleSettingsPost(Request req) async {
@@ -535,9 +539,9 @@ Future<Response> handleOuBrowser(Request req, Config config) async {
   if (session == null) return Response.found('/login');
   try {
     final ous = await LdapClient(config, session).getOUs();
-    return Response.ok(renderOuBrowser(session.username, ous), headers: _html);
+    return _ok(renderOuBrowser(session.username, ous));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'OU-Browser fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'OU-Browser fehlgeschlagen: $e'));
   }
 }
 
@@ -549,9 +553,9 @@ Future<Response> handleOuUsers(Request req, Config config) async {
   if (ouDn.isEmpty) return Response.found('/ou');
   try {
     final users = await LdapClient(config, session).getUsersInOu(ouDn, subtree: subtree);
-    return Response.ok(renderOuUsers(session.username, ouDn, users, subtree: subtree), headers: _html);
+    return _ok(renderOuUsers(session.username, ouDn, users, subtree: subtree));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'OU-User laden fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'OU-User laden fehlgeschlagen: $e'));
   }
 }
 
@@ -566,11 +570,11 @@ Future<Response> handleMoveUserForm(Request req, Config config) async {
   try {
     final client = LdapClient(config, session);
     final user = await client.getUserDetails(dn);
-    if (user == null) return Response.ok(renderError(session.username, 'User nicht gefunden.'), headers: _html);
+    if (user == null) return _ok(renderError(session.username, 'User nicht gefunden.'));
     final ous = await client.getOUs();
-    return Response.ok(renderMoveForm(session.username, user, ous, back), headers: _html);
+    return _ok(renderMoveForm(session.username, user, ous, back));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Fehler: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Fehler: $e'));
   }
 }
 
@@ -578,7 +582,7 @@ Future<Response> handleMoveUserPost(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) == UserRole.readonly) return Response.ok(renderError(session.username, 'Keine Berechtigung (readonly).'), headers: _html);
+  if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final dn = params['dn'] ?? '';
   final targetOu = params['target_ou'] ?? '';
   final back = params['back'] ?? '';
@@ -590,7 +594,7 @@ Future<Response> handleMoveUserPost(Request req, Config config) async {
     auditLog(session.username, 'User verschoben', newDn, 'nach: $targetOu');
     return Response.found('/user?dn=${Uri.encodeComponent(newDn)}&q=${Uri.encodeComponent(back)}');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Verschieben fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Verschieben fehlgeschlagen: $e'));
   }
 }
 
@@ -600,7 +604,7 @@ Future<Response> handleCreateGroup(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) == UserRole.readonly) return Response.ok(renderError(session.username, 'Keine Berechtigung (readonly).'), headers: _html);
+  if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final name = params['name'] ?? '';
   final ouDn = params['ou_dn'] ?? '';
   final description = params['description'] ?? '';
@@ -610,7 +614,7 @@ Future<Response> handleCreateGroup(Request req, Config config) async {
     auditLog(session.username, 'Gruppe erstellt', newDn);
     return Response.found('/groups');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Gruppe erstellen fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Gruppe erstellen fehlgeschlagen: $e'));
   }
 }
 
@@ -618,7 +622,7 @@ Future<Response> handleDeleteGroup(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) != UserRole.admin) return Response.ok(renderError(session.username, 'Nur Admins dÃ¼rfen Gruppen lÃ¶schen.'), headers: _html);
+  if (_role(req) != UserRole.admin) return _ok(renderError(session.username, 'Nur Admins dÃ¼rfen Gruppen lÃ¶schen.'));
   final groupDn = params['group_dn'] ?? '';
   if (groupDn.isEmpty) return Response.badRequest(body: 'Fehlender DN');
   try {
@@ -626,7 +630,7 @@ Future<Response> handleDeleteGroup(Request req, Config config) async {
     auditLog(session.username, 'Gruppe gelÃ¶scht', groupDn);
     return Response.found('/groups');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Gruppe lÃ¶schen fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Gruppe lÃ¶schen fehlgeschlagen: $e'));
   }
 }
 
@@ -636,7 +640,7 @@ Future<Response> handleBulkUnlock(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) == UserRole.readonly) return Response.ok(renderError(session.username, 'Keine Berechtigung (readonly).'), headers: _html);
+  if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final userDns = (params['user_dns'] ?? '').split('\n').where((s) => s.isNotEmpty).toList();
   final back = params['back'] ?? '';
   if (userDns.isEmpty) return Response.badRequest(body: 'Fehlende Parameter');
@@ -645,7 +649,7 @@ Future<Response> handleBulkUnlock(Request req, Config config) async {
     auditLog(session.username, 'Bulk-Entsperren', '', '${userDns.length} User');
     return Response.found('/search?q=${Uri.encodeComponent(back)}');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Bulk-Entsperren fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Bulk-Entsperren fehlgeschlagen: $e'));
   }
 }
 
@@ -653,7 +657,7 @@ Future<Response> handleBulkDisable(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) == UserRole.readonly) return Response.ok(renderError(session.username, 'Keine Berechtigung (readonly).'), headers: _html);
+  if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final userDns = (params['user_dns'] ?? '').split('\n').where((s) => s.isNotEmpty).toList();
   final action = params['action'] ?? 'disable';
   final back = params['back'] ?? '';
@@ -664,7 +668,7 @@ Future<Response> handleBulkDisable(Request req, Config config) async {
     auditLog(session.username, disable ? 'Bulk-Deaktivieren' : 'Bulk-Aktivieren', '', '${userDns.length} User');
     return Response.found('/search?q=${Uri.encodeComponent(back)}');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Bulk-Aktion fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Bulk-Aktion fehlgeschlagen: $e'));
   }
 }
 
@@ -673,7 +677,7 @@ Future<Response> handleBulkDisable(Request req, Config config) async {
 Response handleAuditLog(Request req) {
   final session = _session(req);
   if (session == null) return Response.found('/login');
-  return Response.ok(renderAuditLog(session.username, getAuditLog()), headers: _html);
+  return _ok(renderAuditLog(session.username, getAuditLog()));
 }
 
 // â”€â”€ User kopieren â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -686,10 +690,10 @@ Future<Response> handleCloneForm(Request req, Config config) async {
   if (dn.isEmpty) return Response.found('/');
   try {
     final user = await LdapClient(config, session).getUserDetails(dn);
-    if (user == null) return Response.ok(renderError(session.username, 'User nicht gefunden.'), headers: _html);
-    return Response.ok(renderCloneForm(session.username, user, back), headers: _html);
+    if (user == null) return _ok(renderError(session.username, 'User nicht gefunden.'));
+    return _ok(renderCloneForm(session.username, user, back));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Fehler: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Fehler: $e'));
   }
 }
 
@@ -697,7 +701,7 @@ Future<Response> handleClonePost(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) != UserRole.admin) return Response.ok(renderError(session.username, 'Nur Admins dÃ¼rfen User erstellen.'), headers: _html);
+  if (_role(req) != UserRole.admin) return _ok(renderError(session.username, 'Nur Admins dÃ¼rfen User erstellen.'));
   final templateDn = params['template_dn'] ?? '';
   final parentOuDn = params['parent_ou'] ?? '';
   final givenName = params['givenName'] ?? '';
@@ -711,7 +715,7 @@ Future<Response> handleClonePost(Request req, Config config) async {
   final back = params['back'] ?? '';
 
   if (givenName.isEmpty || sn.isEmpty || sam.isEmpty || password.isEmpty || parentOuDn.isEmpty) {
-    return Response.ok(renderError(session.username, 'Pflichtfelder fehlen.'), headers: _html);
+    return _ok(renderError(session.username, 'Pflichtfelder fehlen.'));
   }
 
   try {
@@ -742,7 +746,7 @@ Future<Response> handleClonePost(Request req, Config config) async {
     auditLog(session.username, 'User erstellt (Kopie)', newDn, 'Vorlage: $templateDn');
     return Response.found('/user?dn=${Uri.encodeComponent(newDn)}&q=${Uri.encodeComponent(back)}&msg=clone_ok');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'User erstellen fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'User erstellen fehlgeschlagen: $e'));
   }
 }
 
@@ -752,7 +756,7 @@ Future<Response> handlePasswordMustChange(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) == UserRole.readonly) return Response.ok(renderError(session.username, 'Keine Berechtigung (readonly).'), headers: _html);
+  if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final dn = params['dn'] ?? '';
   final back = params['back'] ?? '';
   if (dn.isEmpty) return Response.badRequest(body: 'Fehlender DN');
@@ -761,7 +765,7 @@ Future<Response> handlePasswordMustChange(Request req, Config config) async {
     auditLog(session.username, 'Passwort-Pflicht bei Anmeldung gesetzt', dn);
     return Response.found('/user?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Fehler: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Fehler: $e'));
   }
 }
 
@@ -769,7 +773,7 @@ Future<Response> handlePwdNeverExpires(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) == UserRole.readonly) return Response.ok(renderError(session.username, 'Keine Berechtigung (readonly).'), headers: _html);
+  if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final dn = params['dn'] ?? '';
   final uac = int.tryParse(params['uac'] ?? '0') ?? 0;
   final enable = params['enable'] == '1';
@@ -780,7 +784,7 @@ Future<Response> handlePwdNeverExpires(Request req, Config config) async {
     auditLog(session.username, enable ? 'Passwort lÃ¤uft nie ab: ein' : 'Passwort lÃ¤uft nie ab: aus', dn);
     return Response.found('/user?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Fehler: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Fehler: $e'));
   }
 }
 
@@ -788,7 +792,7 @@ Future<Response> handleAccountExpiry(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) == UserRole.readonly) return Response.ok(renderError(session.username, 'Keine Berechtigung (readonly).'), headers: _html);
+  if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final dn = params['dn'] ?? '';
   final expiryStr = params['expiry'] ?? '';
   final back = params['back'] ?? '';
@@ -799,7 +803,7 @@ Future<Response> handleAccountExpiry(Request req, Config config) async {
     auditLog(session.username, 'Ablaufdatum gesetzt', dn, expiryStr.isNotEmpty ? expiryStr : 'kein Ablauf');
     return Response.found('/user?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Fehler: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Fehler: $e'));
   }
 }
 
@@ -810,9 +814,9 @@ Future<Response> handleInactiveUsers(Request req, Config config) async {
   if (session == null) return Response.found('/login');
   try {
     final users = await LdapClient(config, session).getInactiveUsers();
-    return Response.ok(renderInactiveUsers(session.username, users), headers: _html);
+    return _ok(renderInactiveUsers(session.username, users));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Fehler: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Fehler: $e'));
   }
 }
 
@@ -823,9 +827,9 @@ Future<Response> handleServiceAccounts(Request req, Config config) async {
   if (session == null) return Response.found('/login');
   try {
     final users = await LdapClient(config, session).getServiceAccounts();
-    return Response.ok(renderServiceAccounts(session.username, users), headers: _html);
+    return _ok(renderServiceAccounts(session.username, users));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Fehler: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Fehler: $e'));
   }
 }
 
@@ -836,9 +840,9 @@ Future<Response> handleUsersNoEmail(Request req, Config config) async {
   if (session == null) return Response.found('/login');
   try {
     final users = await LdapClient(config, session).getUsersWithoutEmail();
-    return Response.ok(renderUsersNoEmail(session.username, users), headers: _html);
+    return _ok(renderUsersNoEmail(session.username, users));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Fehler: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Fehler: $e'));
   }
 }
 
@@ -849,9 +853,9 @@ Future<Response> handlePasswordPolicy(Request req, Config config) async {
   if (session == null) return Response.found('/login');
   try {
     final policy = await LdapClient(config, session).getPasswordPolicy();
-    return Response.ok(renderPasswordPolicy(session.username, policy), headers: _html);
+    return _ok(renderPasswordPolicy(session.username, policy));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Fehler: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Fehler: $e'));
   }
 }
 
@@ -861,20 +865,26 @@ Future<Response> handleUserCompare(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final dnA = req.url.queryParameters['a'] ?? '';
-  final dnB = req.url.queryParameters['b'] ?? '';
+  var dnB = req.url.queryParameters['b'] ?? '';
   if (dnA.isEmpty) return Response.found('/');
   try {
     final client = LdapClient(config, session);
     final userA = await client.getUserDetails(dnA);
-    if (userA == null) return Response.ok(renderError(session.username, 'User A nicht gefunden.'), headers: _html);
+    if (userA == null) return _ok(renderError(session.username, 'User A nicht gefunden.'));
     if (dnB.isEmpty) {
-      return Response.ok(renderUserCompareForm(session.username, userA), headers: _html);
+      return _ok(renderUserCompareForm(session.username, userA));
+    }
+    // Wenn kein DN (kein Komma), per Name/Benutzername suchen
+    if (!dnB.contains(',')) {
+      final results = await client.searchUsers(dnB);
+      if (results.isEmpty) return _ok(renderError(session.username, 'Benutzer "$dnB" nicht gefunden.'));
+      dnB = results.first['dn'] as String;
     }
     final userB = await client.getUserDetails(dnB);
-    if (userB == null) return Response.ok(renderError(session.username, 'User B nicht gefunden.'), headers: _html);
-    return Response.ok(renderUserCompare(session.username, userA, userB), headers: _html);
+    if (userB == null) return _ok(renderError(session.username, 'User B nicht gefunden.'));
+    return _ok(renderUserCompare(session.username, userA, userB));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Vergleich fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Vergleich fehlgeschlagen: $e'));
   }
 }
 
@@ -889,44 +899,14 @@ Future<Response> handleEffectiveGroups(Request req, Config config) async {
     final client = LdapClient(config, session);
     final user = await client.getUserDetails(dn);
     final groups = await client.getEffectiveGroups(dn);
-    return Response.ok(renderEffectiveGroups(session.username, user, dn, groups), headers: _html);
+    return _ok(renderEffectiveGroups(session.username, user, dn, groups));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Fehler: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Fehler: $e'));
   }
 }
 
 // â”€â”€ CSV Bulk-Update â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-Future<Response> handleBulkCsvForm(Request req) {
-  final session = _session(req);
-  if (session == null) return Future.value(Response.found('/login'));
-  return Future.value(Response.ok(renderBulkCsvForm(session.username), headers: _html));
-}
-
-Future<Response> handleBulkCsvPost(Request req, Config config) async {
-  final session = _session(req);
-  if (session == null) return Response.found('/login');
-  final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) != UserRole.admin) return Response.ok(renderError(session.username, 'Nur Admins dÃ¼rfen Bulk-CSV-Updates durchfÃ¼hren.'), headers: _html);
-  final csvData = params['csv'] ?? '';
-  if (csvData.trim().isEmpty) {
-    return Response.ok(renderBulkCsvForm(session.username, error: 'Keine Daten eingegeben.'), headers: _html);
-  }
-  try {
-    final lines = csvData.split(RegExp(r'\r?\n')).where((l) => l.trim().isNotEmpty).toList();
-    if (lines.length < 2) {
-      return Response.ok(renderBulkCsvForm(session.username, error: 'Mindestens Header + 1 Datenzeile nÃ¶tig.'), headers: _html);
-    }
-    final headers = lines[0].split(',').map((h) => h.trim()).toList();
-    final rows = lines.skip(1).map((l) => l.split(',').toList()).toList();
-    final results = await LdapClient(config, session).bulkUpdateFromCsv(headers, rows);
-    final ok = results.where((r) => r['success'] == true).length;
-    auditLog(session.username, 'CSV Bulk-Update: $ok/${results.length} erfolgreich', '', '');
-    return Response.ok(renderBulkCsvResult(session.username, headers, results), headers: _html);
-  } catch (e) {
-    return Response.ok(renderError(session.username, 'CSV-Verarbeitung fehlgeschlagen: $e'), headers: _html);
-  }
-}
 
 // â”€â”€ Computer-Browser â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -935,9 +915,9 @@ Future<Response> handleComputers(Request req, Config config) async {
   if (session == null) return Response.found('/login');
   try {
     final computers = await LdapClient(config, session).getComputers();
-    return Response.ok(renderComputers(session.username, computers), headers: _html);
+    return _ok(renderComputers(session.username, computers));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Fehler: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Fehler: $e'));
   }
 }
 
@@ -949,12 +929,19 @@ Future<Response> handleComputerMoveLager(Request req, Config config) async {
   final targetOu = params['target_ou'] ?? '';
   if (dn.isEmpty || targetOu.isEmpty) return Response.badRequest(body: 'Fehlende Parameter');
   try {
-    await LdapClient(config, session).moveUser(dn, targetOu);
+    final client = LdapClient(config, session);
+    await client.moveUser(dn, targetOu);
     final rdn = dn.substring(0, dn.indexOf(','));
-    auditLog(session.username, 'Computer ins Lager verschoben', '$rdn,$targetOu', 'von: $dn');
+    final newDn = '$rdn,$targetOu';
+    auditLog(session.username, 'Computer ins Lager verschoben', newDn, 'von: $dn');
+    // Gerät direkt deaktivieren (UAC Bit 2 setzen)
+    try {
+      await client.setAccountDisabled(newDn, 4096, true);
+      auditLog(session.username, 'Computer deaktiviert (Lager)', newDn, '');
+    } catch (_) {}
     return Response.found('/computers');
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Verschieben fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Verschieben fehlgeschlagen: $e'));
   }
 }
 
@@ -978,9 +965,9 @@ Future<Response> handleAdvancedSearch(Request req, Config config) async {
         status: params['status'] ?? 'all',
       );
     }
-    return Response.ok(renderAdvancedSearch(session.username, ous, params, results), headers: _html);
+    return _ok(renderAdvancedSearch(session.username, ous, params, results));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Suche fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Suche fehlgeschlagen: $e'));
   }
 }
 
@@ -1010,12 +997,12 @@ Future<Response> handleOrgChart(Request req, Config config) async {
   if (session == null) return Response.found('/login');
   final dn = req.url.queryParameters['dn'] ?? '';
   if (dn.isEmpty) {
-    return Response.ok(renderOrgChartForm(session.username), headers: _html);
+    return _ok(renderOrgChartForm(session.username));
   }
   try {
     final client = LdapClient(config, session);
     final user = await client.getOrgChartUser(dn);
-    if (user == null) return Response.ok(renderError(session.username, 'User nicht gefunden.'), headers: _html);
+    if (user == null) return _ok(renderError(session.username, 'User nicht gefunden.'));
 
     // Manager laden (max 2 Ebenen hoch)
     final managers = <Map<String, dynamic>>[];
@@ -1035,9 +1022,9 @@ Future<Response> handleOrgChart(Request req, Config config) async {
       if (r != null) reports.add(r);
     }
 
-    return Response.ok(renderOrgChart(session.username, user, managers, reports), headers: _html);
+    return _ok(renderOrgChart(session.username, user, managers, reports));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Org-Chart laden fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Org-Chart laden fehlgeschlagen: $e'));
   }
 }
 
@@ -1048,9 +1035,9 @@ Future<Response> handleDirectory(Request req, Config config) async {
   if (session == null) return Response.found('/login');
   try {
     final users = await LdapClient(config, session).getPhoneDirectory();
-    return Response.ok(renderDirectory(session.username, users), headers: _html);
+    return _ok(renderDirectory(session.username, users));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Verzeichnis laden fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Verzeichnis laden fehlgeschlagen: $e'));
   }
 }
 
@@ -1069,7 +1056,7 @@ Future<Response> handleExportDirectory(Request req, Config config) async {
       'content-disposition': 'attachment; filename="telefonverzeichnis.csv"',
     });
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Export fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Export fehlgeschlagen: $e'));
   }
 }
 
@@ -1090,59 +1077,14 @@ Future<Response> handleDeptStats(Request req, Config config) async {
     }
     final sorted = deptMap.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    return Response.ok(renderDeptStats(session.username, sorted.take(20).toList()), headers: _html);
+    return _ok(renderDeptStats(session.username, sorted.take(20).toList()));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Statistik laden fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Statistik laden fehlgeschlagen: $e'));
   }
 }
 
 // â”€â”€ Feature 4: Bulk PW-Reset â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-Future<Response> handleBulkPwResetForm(Request req, Config config) async {
-  final session = _session(req);
-  if (session == null) return Response.found('/login');
-  try {
-    final users = await LdapClient(config, session).getActiveUsers();
-    return Response.ok(renderBulkPwResetForm(session.username, users), headers: _html);
-  } catch (e) {
-    return Response.ok(renderError(session.username, 'Fehler: $e'), headers: _html);
-  }
-}
-
-Future<Response> handleBulkPwResetPost(Request req, Config config) async {
-  final session = _session(req);
-  if (session == null) return Response.found('/login');
-  final body = await req.readAsString();
-  final params = Uri.splitQueryString(body);
-  if (_role(req) == UserRole.readonly) return Response.ok(renderError(session.username, 'Keine Berechtigung (readonly).'), headers: _html);
-  // dns[] aus dem Body extrahieren
-  final dns = <String>[];
-  for (final part in body.split('&')) {
-    if (part.startsWith('dns%5B%5D=') || part.startsWith('dns[]=')) {
-      final val = Uri.decodeQueryComponent(part.contains('%5B%5D=')
-          ? part.substring('dns%5B%5D='.length)
-          : part.substring('dns[]='.length));
-      if (val.isNotEmpty) dns.add(val);
-    }
-  }
-  // Fallback: auch aus params['dns[]'] versuchen
-  if (dns.isEmpty) {
-    final raw = params['dns[]'] ?? params['dns'];
-    if (raw != null && raw.isNotEmpty) dns.add(raw);
-  }
-  if (dns.isEmpty) return Response.ok(renderError(session.username, 'Keine User ausgewÃ¤hlt.'), headers: _html);
-  try {
-    final result = await LdapClient(config, session).bulkPwdReset(dns);
-    final success = (result['success'] as List).cast<String>();
-    final errors = (result['errors'] as Map).cast<String, String>();
-    for (final dn in success) {
-      auditLog(session.username, 'Bulk PW-Reset: Passwort-Pflicht bei Anmeldung gesetzt', dn);
-    }
-    return Response.ok(renderBulkPwResetResult(session.username, success, errors), headers: _html);
-  } catch (e) {
-    return Response.ok(renderError(session.username, 'Bulk PW-Reset fehlgeschlagen: $e'), headers: _html);
-  }
-}
 
 // â”€â”€ Feature 5: Ablaufende Accounts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -1151,9 +1093,9 @@ Future<Response> handleExpiringAccounts(Request req, Config config) async {
   if (session == null) return Response.found('/login');
   try {
     final users = await LdapClient(config, session).getExpiringAccounts();
-    return Response.ok(renderExpiringAccounts(session.username, users), headers: _html);
+    return _ok(renderExpiringAccounts(session.username, users));
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Fehler: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Fehler: $e'));
   }
 }
 
@@ -1232,7 +1174,7 @@ Future<Response> handleExportAllUsers(Request req, Config config) async {
       'content-disposition': 'attachment; filename="users_$date.csv"',
     });
   } catch (e) {
-    return Response.ok(renderError(session.username, 'Export fehlgeschlagen: $e'), headers: _html);
+    return _ok(renderError(session.username, 'Export fehlgeschlagen: $e'));
   }
 }
 
@@ -1242,17 +1184,17 @@ Response handleConfigPage(Request req, Config config) {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   if (_role(req) != UserRole.admin) {
-    return Response.ok(renderError(session.username, 'Nur Admins dÃ¼rfen die Konfiguration Ã¤ndern.'), headers: _html);
+    return _ok(renderError(session.username, 'Nur Admins dÃ¼rfen die Konfiguration Ã¤ndern.'));
   }
   final saved = req.url.queryParameters['saved'] == '1';
-  return Response.ok(renderConfigPage(session.username, config, saved: saved, csrfToken: _csrfFor(req)), headers: _html);
+  return _ok(renderConfigPage(session.username, config, saved: saved, csrfToken: _csrfFor(req)));
 }
 
 Future<Response> handleConfigPost(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   if (_role(req) != UserRole.admin) {
-    return Response.ok(renderError(session.username, 'Nur Admins dÃ¼rfen die Konfiguration Ã¤ndern.'), headers: _html);
+    return _ok(renderError(session.username, 'Nur Admins dÃ¼rfen die Konfiguration Ã¤ndern.'));
   }
   final params = Uri.splitQueryString(await req.readAsString());
   final updates = <String, String>{};
@@ -1296,17 +1238,17 @@ Response handleRolesPage(Request req) {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   if (_role(req) != UserRole.admin) {
-    return Response.ok(renderError(session.username, 'Nur Admins dÃ¼rfen Rollen verwalten.'), headers: _html);
+    return _ok(renderError(session.username, 'Nur Admins dÃ¼rfen Rollen verwalten.'));
   }
   final roles = getAllRoles();
-  return Response.ok(renderRolesPage(session.username, roles, csrfToken: _csrfFor(req)), headers: _html);
+  return _ok(renderRolesPage(session.username, roles, csrfToken: _csrfFor(req)));
 }
 
 Future<Response> handleRolesPost(Request req) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   if (_role(req) != UserRole.admin) {
-    return Response.ok(renderError(session.username, 'Nur Admins dÃ¼rfen Rollen verwalten.'), headers: _html);
+    return _ok(renderError(session.username, 'Nur Admins dÃ¼rfen Rollen verwalten.'));
   }
   final params = Uri.splitQueryString(await req.readAsString());
   // Parse user=role pairs

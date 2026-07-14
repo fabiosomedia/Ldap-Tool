@@ -12,3 +12,4 @@ dependencies:
   shelf_static: ^1.1.0
   dartdap: ^0.11.0
   dotenv: ^4.2.0
+  mailer: ^6.1.0

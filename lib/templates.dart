@@ -32,9 +32,9 @@ String _searchHistoryPills(List<String> history) {
 // ── Dark Mode CSS variables ───────────────────────────────────────────────────
 const _darkCss = '''
 [data-theme="dark"] {
-  --navy:    #080a10;
-  --navy-2:  #0d0f14;
-  --navy-3:  #141720;
+  --navy:    #0a0f1e;
+  --navy-2:  #0f172a;
+  --navy-3:  #1e293b;
   --gray-50:  #1e2130;
   --gray-100: #252a3d;
   --gray-200: #2e3450;
@@ -46,7 +46,7 @@ const _darkCss = '''
   --gray-800: #e2e8f0;
   --text: #e2e8f0;
   --surface: #1a1d27;
-  --blue-lt: rgba(84,105,212,.18);
+  --blue-lt: rgba(37,99,235,.18);
   --green-lt: rgba(26,122,77,.18);
   --red-lt:   rgba(192,40,42,.18);
   --amber-lt: rgba(146,64,14,.18);
@@ -106,12 +106,12 @@ String _layout(String username, String title, String body, {String active = '', 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf-token" content="$csrfToken">
-  <meta name="generator" content="AD Console · Built by Somedia IT">
-  <!-- AD Console · Powered by Somedia IT · somedia.ch -->
+  <meta name="generator" content="UserDesk · Built by Somedia IT">
+  <!-- UserDesk · Powered by Somedia IT · somedia.ch -->
   <title>$title – LDAP Tool</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <script>
     (function() {
       try {
@@ -123,12 +123,12 @@ String _layout(String username, String title, String body, {String active = '', 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --navy:    #0d0f14;
-      --navy-2:  #161920;
-      --navy-3:  #1e2130;
-      --blue:    #5469d4;
-      --blue-lt: #eef0fc;
-      --blue-dk: #3d54c0;
+      --navy:    #0f172a;
+      --navy-2:  #1e293b;
+      --navy-3:  #334155;
+      --blue:    #2563eb;
+      --blue-lt: #eff6ff;
+      --blue-dk: #1d4ed8;
       --green:   #1a7a4d; --green-lt: #eaf5ee;
       --red:     #c0282a; --red-lt:   #fae9e9;
       --amber:   #92400e; --amber-lt: #fef3c7;
@@ -141,31 +141,31 @@ String _layout(String username, String title, String body, {String active = '', 
       --gray-600: #4b5263;
       --gray-800: #1a1d27;
       --surface:  #ffffff;
-      --radius: 10px;
+      --radius: 12px;
       --shadow-xs: 0 1px 2px rgba(0,0,0,.04);
-      --shadow-sm: 0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
-      --shadow-md: 0 4px 12px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.05);
-      --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+      --shadow-md: 0 4px 16px rgba(0,0,0,.10), 0 1px 4px rgba(0,0,0,.06);
+      --sans: 'Inter', system-ui, -apple-system, sans-serif;
       --mono: 'IBM Plex Mono', ui-monospace, monospace;
     }
 
-    body { font-family: var(--sans); background: #edf0f7; color: var(--gray-800); -webkit-font-smoothing: antialiased; }
+    body { font-family: var(--sans); font-size: 15px; background: #f1f4f9; color: var(--gray-800); -webkit-font-smoothing: antialiased; }
     .app { display: flex; min-height: 100vh; }
 
     /* ── Sidebar ── */
     .sidebar {
-      width: 232px; flex-shrink: 0;
+      width: 252px; flex-shrink: 0;
       position: sticky; top: 0; height: 100vh;
       display: flex; flex-direction: column;
       background: var(--navy);
-      border-right: 1px solid rgba(255,255,255,.04);
+      border-right: 1px solid rgba(255,255,255,.06);
       overflow: hidden;
     }
     .sidebar::before {
       content: '';
       position: absolute; inset: 0;
       background:
-        radial-gradient(ellipse 140% 60% at 50% -10%, rgba(84,105,212,.18) 0%, transparent 65%);
+        radial-gradient(ellipse 140% 60% at 50% -10%, rgba(37,99,235,.22) 0%, transparent 65%);
       pointer-events: none;
     }
 
@@ -176,36 +176,37 @@ String _layout(String username, String title, String body, {String active = '', 
       position: relative;
     }
     .brand-mark {
-      width: 32px; height: 32px; border-radius: 8px;
-      background: linear-gradient(135deg, #5469d4 0%, #7c5cdb 100%);
+      width: 34px; height: 34px; border-radius: 9px;
+      background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
       display: flex; align-items: center; justify-content: center;
-      font: 700 14px var(--mono); color: #fff; flex-shrink: 0;
-      box-shadow: 0 2px 10px rgba(84,105,212,.5);
+      font: 700 12px var(--sans); color: #fff; flex-shrink: 0;
+      box-shadow: 0 2px 10px rgba(37,99,235,.55);
+      letter-spacing: .03em;
     }
-    .brand-name { font: 700 13.5px var(--sans); color: #fff; line-height: 1.2; letter-spacing: .01em; }
-    .brand-sub  { font: 500 9px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.3); margin-top: 2px; }
+    .brand-name { font: 700 14px var(--sans); color: #fff; line-height: 1.2; letter-spacing: .01em; }
+    .brand-sub  { font: 500 10px var(--sans); letter-spacing: .04em; color: rgba(255,255,255,.4); margin-top: 2px; }
 
     .nav-group {
-      padding: .75rem 1.1rem .25rem;
-      font: 600 9px var(--mono); letter-spacing: .14em; text-transform: uppercase;
-      color: rgba(255,255,255,.25);
+      padding: .85rem 1.1rem .3rem;
+      font: 600 10px var(--sans); letter-spacing: .1em; text-transform: uppercase;
+      color: rgba(255,255,255,.3);
     }
-    nav { display: flex; flex-direction: column; gap: 2px; padding: 0 .65rem; position: relative; }
+    nav { display: flex; flex-direction: column; gap: 2px; padding: 0 .7rem; position: relative; }
 
     .nav-link {
-      display: flex; align-items: center; gap: .6rem;
-      color: rgba(255,255,255,.5); text-decoration: none;
-      font: 500 12.5px var(--sans);
-      padding: .5rem .7rem; border-radius: 7px;
+      display: flex; align-items: center; gap: .65rem;
+      color: rgba(255,255,255,.55); text-decoration: none;
+      font: 500 13.5px var(--sans);
+      padding: .55rem .8rem; border-radius: 8px;
       transition: color .12s, background .12s;
       position: relative; z-index: 1;
     }
-    .nav-link svg { flex-shrink: 0; transition: opacity .12s; opacity: .65; }
-    .nav-link:hover { color: rgba(255,255,255,.9); background: rgba(255,255,255,.06); }
+    .nav-link svg { flex-shrink: 0; transition: opacity .12s; opacity: .7; }
+    .nav-link:hover { color: rgba(255,255,255,.95); background: rgba(255,255,255,.07); }
     .nav-link:hover svg { opacity: 1; }
     .nav-link.active {
-      color: #fff; background: rgba(84,105,212,.2);
-      box-shadow: inset 3px 0 0 var(--blue);
+      color: #fff; background: rgba(37,99,235,.25);
+      box-shadow: inset 3px 0 0 #60a5fa;
     }
     .nav-link.active svg { opacity: 1; }
 
@@ -232,24 +233,24 @@ String _layout(String username, String title, String body, {String active = '', 
 
     .nav-user { display: flex; align-items: center; gap: .55rem; }
     .nav-user-av {
-      width: 28px; height: 28px; border-radius: 7px;
-      background: linear-gradient(135deg, #5469d4, #7c5cdb);
+      width: 30px; height: 30px; border-radius: 8px;
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
       color: #fff; display: flex; align-items: center; justify-content: center;
-      font: 700 10px var(--mono); flex-shrink: 0;
+      font: 700 11px var(--sans); flex-shrink: 0;
     }
-    .nav-user-name { font: 600 11.5px var(--sans); color: rgba(255,255,255,.85); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .nav-user-role { font: 400 9px var(--mono); color: rgba(255,255,255,.3); margin-top: 1px; }
+    .nav-user-name { font: 600 12.5px var(--sans); color: rgba(255,255,255,.9); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nav-user-role { font: 400 10px var(--sans); color: rgba(255,255,255,.35); margin-top: 1px; }
     .nav-user a {
       margin-left: auto; color: rgba(255,255,255,.38); text-decoration: none;
       font: 500 11px var(--mono); padding: .28rem .5rem;
       border: 1px solid rgba(255,255,255,.1); border-radius: 6px;
       transition: all .12s; flex-shrink: 0;
     }
-    .nav-user a:hover { border-color: var(--blue); color: #fff; background: rgba(84,105,212,.2); }
+    .nav-user a:hover { border-color: var(--blue); color: #fff; background: rgba(37,99,235,.2); }
 
     /* ── Content ── */
     .content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-    main { max-width: 1080px; margin: 1.5rem auto; padding: 0 1.5rem; width: 100%; }
+    main { max-width: 1600px; margin: 1.5rem auto; padding: 0 1.5rem; width: 100%; box-sizing: border-box; }
 
     /* ── Cards ── */
     .card {
@@ -259,10 +260,10 @@ String _layout(String username, String title, String body, {String active = '', 
       margin-bottom: 1.25rem;
       overflow: hidden;
     }
-    .card-pad { padding: 1.25rem 1.5rem; }
+    .card-pad { padding: 1.4rem 1.6rem; }
     .card-section-title {
-      font: 600 10px var(--mono); letter-spacing: .12em; text-transform: uppercase;
-      color: var(--gray-400); margin-bottom: .85rem;
+      font: 600 11px var(--sans); letter-spacing: .08em; text-transform: uppercase;
+      color: var(--gray-400); margin-bottom: .9rem;
     }
 
     /* ── Search box ── */
@@ -273,40 +274,46 @@ String _layout(String username, String title, String body, {String active = '', 
       font: 400 14px var(--sans); color: var(--gray-800);
       background: white; transition: border-color .15s, box-shadow .15s;
     }
-    .search-box input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(84,105,212,.12); }
+    .search-box input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
     .search-box input::placeholder { color: var(--gray-400); }
 
     /* ── Buttons ── */
     .btn {
-      display: inline-flex; align-items: center; gap: .35rem;
-      padding: .5rem 1rem; border: none; border-radius: 7px;
-      font: 500 13px var(--sans); cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .55rem 1.1rem; border: none; border-radius: 8px;
+      font: 500 14px var(--sans); cursor: pointer; text-decoration: none;
       transition: all .13s; white-space: nowrap; letter-spacing: .01em;
     }
-    .btn-primary { background: var(--blue); color: #fff; box-shadow: 0 1px 4px rgba(84,105,212,.4); }
-    .btn-primary:hover { background: var(--blue-dk); box-shadow: 0 2px 8px rgba(84,105,212,.5); transform: translateY(-1px); }
-    .btn-primary:active { transform: none; box-shadow: 0 1px 3px rgba(84,105,212,.3); }
+    .btn-primary { background: var(--blue); color: #fff; box-shadow: 0 1px 4px rgba(37,99,235,.4); }
+    .btn-primary:hover { background: var(--blue-dk); box-shadow: 0 3px 10px rgba(37,99,235,.5); transform: translateY(-1px); }
+    .btn-primary:active { transform: none; box-shadow: 0 1px 3px rgba(37,99,235,.3); }
     .btn-ghost { background: white; color: var(--gray-600); border: 1px solid var(--gray-200); }
     .btn-ghost:hover { background: var(--gray-50); border-color: var(--gray-300); color: var(--gray-800); }
     .btn-danger { background: var(--red-lt); color: var(--red); border: 1px solid #f5c0c0; }
     .btn-danger:hover { background: #f7d0d0; border-color: #e8a0a0; }
     .btn-success { background: var(--green-lt); color: var(--green); border: 1px solid #a8d8bc; }
     .btn-success:hover { background: #d6eddf; }
-    .btn-sm { padding: .28rem .65rem; font-size: .8rem; border-radius: 6px; }
-    .btn-xs { padding: .18rem .45rem; font-size: .72rem; border-radius: 5px; }
+    .btn-sm { padding: .32rem .7rem; font-size: .85rem; border-radius: 7px; }
+    .btn-xs { padding: .2rem .5rem; font-size: .78rem; border-radius: 6px; }
 
     /* ── Result table ── */
-    .result-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    .table-wrap { overflow-x: auto; width: 100%; }
+    .result-table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: .78rem; }
     .result-table thead th {
-      text-align: left; padding: .6rem .9rem;
+      text-align: left; padding: .3rem .2rem;
       background: var(--gray-50);
       border-bottom: 1px solid var(--gray-200);
       font: 600 .67rem var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--gray-400);
+      white-space: nowrap;
     }
-    .result-table tbody td { padding: .7rem .9rem; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+    .result-table tbody td { padding: .35rem .2rem; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
     .result-table tbody tr:last-child td { border-bottom: none; }
     .result-table tbody tr { transition: background .1s; }
     .result-table tbody tr:hover td { background: #f4f5fb; }
+    .result-table td:nth-child(1), .result-table th:nth-child(1) { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .result-table td:nth-child(3), .result-table th:nth-child(3) { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .result-table td:nth-child(4), .result-table th:nth-child(4) { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .result-table td:nth-child(5), .result-table th:nth-child(5) { width: 1%; white-space: nowrap; }
 
     .avatar-sm { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; }
     .avatar-placeholder {
@@ -319,11 +326,11 @@ String _layout(String username, String title, String body, {String active = '', 
 
     /* ── Badges ── */
     .badge {
-      display: inline-flex; align-items: center; gap: .28rem;
-      padding: .18rem .55rem; border-radius: 5px;
-      font: 600 .64rem var(--mono); letter-spacing: .05em; text-transform: uppercase;
+      display: inline-flex; align-items: center; gap: .3rem;
+      padding: .25rem .65rem; border-radius: 6px;
+      font: 600 .72rem var(--sans); letter-spacing: .03em; text-transform: uppercase;
     }
-    .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .75; flex-shrink: 0; }
+    .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .8; flex-shrink: 0; }
     .badge-active   { background: var(--green-lt); color: #166539; }
     .badge-disabled { background: var(--red-lt);   color: #9b2020; }
     .badge-locked   { background: var(--amber-lt); color: var(--amber); }
@@ -338,7 +345,7 @@ String _layout(String username, String title, String body, {String active = '', 
     }
     .detail-header::before {
       content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      background: linear-gradient(90deg, var(--blue) 0%, #7c5cdb 100%);
+      background: linear-gradient(90deg, var(--blue) 0%, #60a5fa 100%);
     }
     .detail-avatar { width: 80px; height: 80px; border-radius: 14px; object-fit: cover; border: 2px solid var(--gray-200); flex-shrink: 0; box-shadow: var(--shadow-sm); }
     .detail-avatar-ph {
@@ -347,9 +354,9 @@ String _layout(String username, String title, String body, {String active = '', 
       color: var(--blue); display: flex; align-items: center; justify-content: center;
       font: 700 2rem var(--mono); flex-shrink: 0;
     }
-    .detail-name { font: 700 17px var(--sans); color: var(--gray-800); line-height: 1.3; }
-    .detail-sub  { font-size: .83rem; color: var(--gray-400); margin-top: .25rem; }
-    .dn-text { font: 400 .67rem var(--mono); color: var(--gray-300); word-break: break-all; margin-top: .4rem; line-height: 1.5; }
+    .detail-name { font: 700 19px var(--sans); color: var(--gray-800); line-height: 1.3; }
+    .detail-sub  { font-size: .88rem; color: var(--gray-400); margin-top: .3rem; }
+    .dn-text { font: 400 .68rem var(--mono); color: var(--gray-300); word-break: break-all; margin-top: .4rem; line-height: 1.5; }
 
     /* ── Field grid ── */
     .field-grid { display: grid; grid-template-columns: 1fr 1fr; }
@@ -358,8 +365,8 @@ String _layout(String username, String title, String body, {String active = '', 
     .field-col:first-child { border-right: 1px solid var(--gray-100); }
     .field-item { padding: .65rem 0; border-bottom: 1px solid var(--gray-100); }
     .field-item:last-child { border-bottom: none; }
-    .field-label { font: 600 .67rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--gray-400); margin-bottom: .25rem; }
-    .field-val { font-size: .9rem; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; color: var(--gray-800); }
+    .field-label { font: 600 .72rem var(--sans); letter-spacing: .05em; text-transform: uppercase; color: var(--gray-400); margin-bottom: .3rem; }
+    .field-val { font-size: .95rem; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; color: var(--gray-800); }
     .field-val em { color: var(--gray-300); font-style: normal; }
 
     .inline-edit { display: none; margin-top: .5rem; }
@@ -369,7 +376,7 @@ String _layout(String username, String title, String body, {String active = '', 
       border: 1.5px solid var(--gray-200); border-radius: 7px;
       font: 400 .875rem var(--sans); transition: border-color .15s, box-shadow .15s;
     }
-    .inline-edit input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(84,105,212,.1); }
+    .inline-edit input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
 
     .edit-link {
       font: 500 .72rem var(--sans); color: var(--blue); cursor: pointer;
@@ -402,7 +409,7 @@ String _layout(String username, String title, String body, {String active = '', 
       border: 1.5px solid var(--gray-200); border-radius: 7px; font-size: .875rem;
       transition: border-color .15s, box-shadow .15s;
     }
-    .add-group-form input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(84,105,212,.1); }
+    .add-group-form input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
 
     /* ── Alerts ── */
     .alert {
@@ -414,16 +421,20 @@ String _layout(String username, String title, String body, {String active = '', 
     .alert-error   { background: var(--red-lt);   color: #9b2020; border: 1px solid #f5c0c0; }
 
     /* ── Generic table ── */
-    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: .78rem; }
     thead th {
-      text-align: left; padding: .6rem .75rem;
+      text-align: left; padding: .3rem .2rem;
       background: var(--gray-50); border-bottom: 1px solid var(--gray-200);
       font: 600 .67rem var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--gray-400);
+      white-space: nowrap;
     }
-    tbody td { padding: .65rem .75rem; border-bottom: 1px solid var(--gray-100); }
+    tbody td { padding: .35rem .2rem; border-bottom: 1px solid var(--gray-100); }
     tbody tr:last-child td { border-bottom: none; }
     tbody tr { transition: background .08s; }
     tbody tr:hover td { background: #f4f5fb; }
+    /* Wrapper für horizontales Scrollen bei Tabellen */
+    .card > .table-wrap { overflow-x: auto; width: 100%; }
+    .card > table { display: table; }
 
     /* ── Group picker ── */
     .picker-list { display: flex; flex-direction: column; gap: .5rem; margin-top: 1rem; }
@@ -479,7 +490,7 @@ String _layout(String username, String title, String body, {String active = '', 
 
     @media (max-width: 900px) {
       .sidebar {
-        position: fixed; left: -240px; z-index: 100; height: 100vh;
+        position: fixed; left: -260px; z-index: 100; height: 100vh;
         transition: left .25s ease; top: 0; overflow-y: auto;
       }
       .sidebar.open { left: 0; }
@@ -489,10 +500,13 @@ String _layout(String username, String title, String body, {String active = '', 
       main { padding: 0 .75rem; margin: .75rem auto; }
       .field-grid { grid-template-columns: 1fr !important; }
       .stat-grid { grid-template-columns: 1fr 1fr !important; }
+      .dir-filter-wrap { flex-direction: column; }
     }
     @media (min-width: 901px) {
       .mobile-header { display: none !important; }
     }
+    /* Tabellen immer mit Scroll-Wrapper, nie abschneiden */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   </style>
 <script>
 function toggleEdit(btn, id) {
@@ -645,22 +659,22 @@ function toggleSidebar() {
 <div class="sidebar-backdrop" onclick="toggleSidebar()"></div>
 <div class="mobile-header">
   <button class="hamburger" onclick="toggleSidebar()">&#9776;</button>
-  <div style="font:700 13.5px var(--sans);color:#fff;">AD Console</div>
+  <div style="font:700 13.5px var(--sans);color:#fff;">UserDesk</div>
 </div>
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-mark">&gt;_</div>
+      <div class="brand-mark">UD</div>
       <div>
-        <div class="brand-name">AD&nbsp;Console</div>
-        <div class="brand-sub">directory admin</div>
+        <div class="brand-name">UserDesk</div>
+        <div class="brand-sub">Benutzerverwaltung</div>
       </div>
     </div>
-    <div class="nav-group">Verzeichnis</div>
+    <div class="nav-group">Benutzer &amp; Gruppen</div>
     <nav>
       <a href="/" class="nav-link ${active == 'dashboard' ? 'active' : active == 'search' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.2"/><line x1="10.2" y1="10.2" x2="13.5" y2="13.5" stroke-linecap="round"/></svg>
-        Benutzersuche
+        Benutzer suchen
       </a>
       <a href="/search/advanced" class="nav-link ${active == 'advsearch' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.2"/><line x1="10.2" y1="10.2" x2="13.5" y2="13.5" stroke-linecap="round"/><line x1="5" y1="5" x2="9" y2="9" stroke-linecap="round"/></svg>
@@ -672,7 +686,7 @@ function toggleSidebar() {
       </a>
       <a href="/ou" class="nav-link ${active == 'ou' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="2.5" width="5" height="4" rx="1"/><rect x="8.5" y="9.5" width="5.5" height="4" rx="1"/><path d="M4.5 6.5v3.5h6"/></svg>
-        OU-Browser
+        Ordner-Struktur
       </a>
       <a href="/computers" class="nav-link ${active == 'computers' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="2" width="12" height="9" rx="1.5"/><path d="M5 13.5h6M8 11v2.5" stroke-linecap="round"/></svg>
@@ -680,42 +694,42 @@ function toggleSidebar() {
       </a>
       <a href="/audit" class="nav-link ${active == 'log' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="3" y1="4.5" x2="13" y2="4.5"/><line x1="3" y1="8" x2="13" y2="8"/><line x1="3" y1="11.5" x2="9.5" y2="11.5"/></svg>
-        Änderungs-Log
+        Protokoll
       </a>
       <a href="/orgchart" class="nav-link ${active == 'orgchart' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5.5" y="1.5" width="5" height="3.5" rx="1"/><rect x="1" y="11" width="4.5" height="3.5" rx="1"/><rect x="5.5" y="11" width="4.5" height="3.5" rx="1"/><rect x="10.5" y="11" width="4.5" height="3.5" rx="1"/><path d="M8 5v2.5M3.25 11V8.5h9.5V11M8 8.5V7" stroke-linecap="round"/></svg>
-        Org-Chart
+        Org-Diagramm
       </a>
       <a href="/directory" class="nav-link ${active == 'directory' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M5 7.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM3 11c0-1.1.9-2 2-2s2 .9 2 2" stroke-linecap="round"/><line x1="9" y1="6" x2="13" y2="6" stroke-linecap="round"/><line x1="9" y1="9" x2="13" y2="9" stroke-linecap="round"/></svg>
-        Telefonverzeichnis
+        Telefonliste
       </a>
       <a href="/stats/departments" class="nav-link ${active == 'depts' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="2" y1="4" x2="10" y2="4"/><line x1="2" y1="7.5" x2="13" y2="7.5"/><line x1="2" y1="11" x2="8" y2="11"/></svg>
         Abteilungen
       </a>
     </nav>
-    <div class="nav-group">Übersichten</div>
+    <div class="nav-group">Schnellansichten</div>
     <nav>
       <a href="/users/locked" class="nav-link ${active == 'locked' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="7.5" width="8" height="6.5" rx="1.5"/><path d="M5.5 7.5V5.5a2.5 2.5 0 0 1 5 0v2" stroke-linecap="round"/></svg>
-        Gesperrt
+        Gesperrte User
       </a>
       <a href="/users/disabled" class="nav-link ${active == 'disabled' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="5.5"/><line x1="4.5" y1="11.5" x2="11.5" y2="4.5" stroke-linecap="round"/></svg>
-        Deaktiviert
+        Deaktivierte User
       </a>
       <a href="/users/pw-expiring" class="nav-link ${active == 'pw-expiring' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.5l2 1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        PW läuft ab
+        Passwort läuft ab
       </a>
       <a href="/users/inactive" class="nav-link ${active == 'inactive' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/><line x1="11" y1="3" x2="14" y2="6" stroke-linecap="round"/></svg>
-        Inaktiv (90+ Tage)
+        Lange inaktiv
       </a>
       <a href="/users/service" class="nav-link ${active == 'service' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/><circle cx="13" cy="3" r="1.5" fill="currentColor" stroke="none"/></svg>
-        Service-Accounts
+        Service-Konten
       </a>
       <a href="/users/no-email" class="nav-link ${active == 'noemail' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="4" width="12" height="9" rx="1.5"/><path d="M2 6l6 4 6-4"/><line x1="1" y1="15" x2="15" y2="1" stroke-linecap="round"/></svg>
@@ -723,29 +737,18 @@ function toggleSidebar() {
       </a>
       <a href="/users/expiring-accounts" class="nav-link ${active == 'expiring' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="2.5" width="12" height="12" rx="1.5"/><path d="M5 1v3M11 1v3M2 7h12" stroke-linecap="round"/><path d="M8 10v2.5l1.5 1" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Ablaufende Accounts
-      </a>
-    </nav>
-    <div class="nav-group">Bulk-Aktionen</div>
-    <nav>
-      <a href="/bulk/csv" class="nav-link ${active == 'bulkcsv' ? 'active' : ''}">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="1.5" width="12" height="13" rx="1.5"/><line x1="5" y1="5.5" x2="11" y2="5.5" stroke-linecap="round"/><line x1="5" y1="8" x2="11" y2="8" stroke-linecap="round"/><line x1="5" y1="10.5" x2="8.5" y2="10.5" stroke-linecap="round"/></svg>
-        CSV-Import
-      </a>
-      <a href="/bulk/pwreset" class="nav-link ${active == 'bulkpwreset' ? 'active' : ''}">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="7.5" width="8" height="6.5" rx="1.5"/><path d="M5.5 7.5V5.5a2.5 2.5 0 0 1 5 0v2" stroke-linecap="round"/><line x1="8" y1="10" x2="8" y2="11.5" stroke-linecap="round"/></svg>
-        Bulk PW-Reset
+        Konten laufen ab
       </a>
     </nav>
     <div class="nav-group">System</div>
     <nav>
       <a href="/admin/roles" class="nav-link ${active == 'roles' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/><polyline points="11,4 13,6 15,4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Benutzer-Rollen
+        Zugriffsrechte
       </a>
       <a href="/config" class="nav-link ${active == 'config' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="2.5"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.2 3.2l1.4 1.4M11.4 11.4l1.4 1.4M3.2 12.8l1.4-1.4M11.4 4.6l1.4-1.4" stroke-linecap="round"/></svg>
-        Konfiguration
+        Einstellungen
       </a>
     </nav>
     <div class="sidebar-foot">
@@ -783,79 +786,79 @@ String renderLogin(String? error) => '''
 <html lang="de">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Anmelden – AD Console</title>
+  <title>Anmelden – UserDesk</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{
-      font-family:'IBM Plex Sans',system-ui,sans-serif;
+      font-family:'Inter',system-ui,sans-serif;
       -webkit-font-smoothing:antialiased;
       min-height:100vh;display:flex;align-items:center;justify-content:center;
-      background:#080a10;
+      background:#0f172a;
       background-image:
-        radial-gradient(ellipse 80% 60% at 50% -5%, rgba(84,105,212,.35) 0%, transparent 60%),
-        radial-gradient(ellipse 40% 40% at 80% 80%, rgba(124,92,219,.12) 0%, transparent 50%);
+        radial-gradient(ellipse 80% 60% at 50% -5%, rgba(37,99,235,.4) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 80% 80%, rgba(59,130,246,.15) 0%, transparent 50%);
     }
-    .wrap{width:360px;padding:1rem}
-    .top{display:flex;align-items:center;gap:.75rem;justify-content:center;margin-bottom:1.75rem}
+    .wrap{width:380px;padding:1rem}
+    .top{display:flex;align-items:center;gap:.8rem;justify-content:center;margin-bottom:2rem}
     .mark{
-      width:36px;height:36px;border-radius:9px;
-      background:linear-gradient(135deg,#5469d4,#7c5cdb);
+      width:40px;height:40px;border-radius:10px;
+      background:linear-gradient(135deg,#2563eb,#3b82f6);
       display:flex;align-items:center;justify-content:center;
-      font:700 15px 'IBM Plex Mono',monospace;color:#fff;
-      box-shadow:0 4px 16px rgba(84,105,212,.6);
+      font:700 13px 'Inter',sans-serif;color:#fff;letter-spacing:.04em;
+      box-shadow:0 4px 16px rgba(37,99,235,.6);
     }
-    .brandtitle{font:700 18px 'IBM Plex Sans';color:#fff;letter-spacing:.01em}
+    .brandtitle{font:700 20px 'Inter';color:#fff;letter-spacing:.01em}
     .card{
-      background:rgba(22,25,32,.9);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:16px;padding:2rem 1.85rem;
-      box-shadow:0 32px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04) inset;
+      background:rgba(15,23,42,.92);
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:18px;padding:2.25rem 2rem;
+      box-shadow:0 32px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.05) inset;
       backdrop-filter:blur(12px);
     }
-    .card-top{border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:1.5rem;padding-bottom:1.25rem}
-    h2{font:600 15px 'IBM Plex Sans';color:#fff;margin-bottom:.3rem}
-    .sub{font:400 10.5px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.28);letter-spacing:.04em}
-    label{display:block;font:600 9.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.4rem}
-    .field{margin-bottom:.9rem}
+    .card-top{border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:1.6rem;padding-bottom:1.35rem}
+    h2{font:600 17px 'Inter';color:#fff;margin-bottom:.35rem}
+    .sub{font:400 12px 'Inter';color:rgba(255,255,255,.38);letter-spacing:.01em}
+    label{display:block;font:600 11px 'Inter';letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:.45rem}
+    .field{margin-bottom:1rem}
     input{
-      width:100%;padding:.62rem .9rem;
-      border:1px solid rgba(255,255,255,.1);background:rgba(8,10,16,.7);
-      border-radius:8px;font:400 13.5px 'IBM Plex Sans';color:#fff;outline:none;
+      width:100%;padding:.7rem 1rem;
+      border:1px solid rgba(255,255,255,.12);background:rgba(8,10,16,.6);
+      border-radius:9px;font:400 14px 'Inter';color:#fff;outline:none;
       transition:border-color .15s,box-shadow .15s;
     }
-    input:focus{border-color:#5469d4;box-shadow:0 0 0 3px rgba(84,105,212,.25)}
-    input::placeholder{color:rgba(255,255,255,.2)}
+    input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(37,99,235,.28)}
+    input::placeholder{color:rgba(255,255,255,.22)}
     button{
-      width:100%;padding:.72rem;margin-top:.25rem;
-      background:linear-gradient(135deg,#5469d4,#7c5cdb);color:#fff;
-      border:none;border-radius:8px;font:600 13.5px 'IBM Plex Sans';cursor:pointer;
-      box-shadow:0 2px 10px rgba(84,105,212,.5);
+      width:100%;padding:.8rem;margin-top:.25rem;
+      background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;
+      border:none;border-radius:9px;font:600 14px 'Inter';cursor:pointer;
+      box-shadow:0 2px 10px rgba(37,99,235,.5);
       transition:opacity .13s,box-shadow .13s,transform .13s;
     }
-    button:hover{opacity:.9;box-shadow:0 4px 16px rgba(84,105,212,.6);transform:translateY(-1px)}
+    button:hover{opacity:.92;box-shadow:0 4px 18px rgba(37,99,235,.65);transform:translateY(-1px)}
     button:active{transform:none}
     .error{
-      display:flex;align-items:center;gap:.5rem;
+      display:flex;align-items:center;gap:.55rem;
       background:rgba(192,40,42,.15);color:#f3a3a4;
-      border:1px solid rgba(192,40,42,.35);border-radius:8px;
-      padding:.65rem .9rem;font:400 12.5px 'IBM Plex Sans';margin-bottom:1rem;
+      border:1px solid rgba(192,40,42,.35);border-radius:9px;
+      padding:.7rem 1rem;font:400 13px 'Inter';margin-bottom:1.1rem;
     }
-    .foot{text-align:center;font:400 10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.18);margin-top:1.25rem;letter-spacing:.06em}
+    .foot{text-align:center;font:400 11px 'Inter';color:rgba(255,255,255,.2);margin-top:1.35rem;letter-spacing:.03em}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="top">
-      <div class="mark">&gt;_</div>
-      <div class="brandtitle">AD Console</div>
+      <div class="mark">AD</div>
+      <div class="brandtitle">UserDesk</div>
     </div>
     <div class="card">
       <div class="card-top">
         <h2>Anmelden</h2>
-        <p class="sub">nur für autorisierte administratoren</p>
+        <p class="sub">Nur für autorisierte Administratoren</p>
       </div>
       ${error != null ? '<div class="error"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6.5"/><line x1="8" y1="5" x2="8" y2="8.5" stroke-linecap="round"/><circle cx="8" cy="11" r=".5" fill="currentColor" stroke="none"/></svg>$error</div>' : ''}
       <form method="post" action="/login">
@@ -879,7 +882,7 @@ String renderLogin(String? error) => '''
 
 String renderIndex(String username, {List<String> searchHistory = const []}) => _layout(username, 'Suche', '''
   <div style="background:linear-gradient(135deg,#1a1d27 0%,#252a3d 100%);border-radius:14px;padding:2rem 2rem 1.75rem;margin-bottom:1.5rem;position:relative;overflow:hidden;">
-    <div style="position:absolute;top:-30px;right:-30px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(84,105,212,.25) 0%,transparent 70%);pointer-events:none;"></div>
+    <div style="position:absolute;top:-30px;right:-30px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(37,99,235,.25) 0%,transparent 70%);pointer-events:none;"></div>
     <div style="position:absolute;bottom:-40px;left:30%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(124,92,219,.15) 0%,transparent 70%);pointer-events:none;"></div>
     <p style="font:600 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.6rem;">Active Directory</p>
     <h1 style="font:700 22px var(--sans);color:#fff;margin-bottom:.4rem;line-height:1.2;">Benutzersuche</h1>
@@ -899,7 +902,7 @@ String renderIndex(String username, {List<String> searchHistory = const []}) => 
       <div><div style="font:600 13px var(--sans);color:var(--gray-800);">Gruppen</div><div style="font-size:.78rem;color:var(--gray-400);margin-top:1px;">Gruppen durchsuchen</div></div>
     </a>
     <a href="/ou" class="surf" style="text-decoration:none;display:flex;align-items:center;gap:.85rem;background:var(--surface);border:1px solid var(--gray-200);border-radius:10px;padding:1rem 1.1rem;transition:box-shadow .15s,transform .15s;" onmouseover="this.style.boxShadow='var(--shadow-md)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
-      <div style="width:38px;height:38px;border-radius:9px;background:#f0f0fc;color:#5469d4;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <div style="width:38px;height:38px;border-radius:9px;background:#eff6ff;color:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
         <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="2.5" width="5" height="4" rx="1"/><rect x="8.5" y="9.5" width="5.5" height="4" rx="1"/><path d="M4.5 6.5v3.5h6"/></svg>
       </div>
       <div><div style="font:600 13px var(--sans);color:var(--gray-800);">OU-Browser</div><div style="font-size:.78rem;color:var(--gray-400);margin-top:1px;">Verzeichnisstruktur</div></div>
@@ -1001,9 +1004,9 @@ String renderDashboard(String username, Map<String, int> stats, List<AuditEntry>
   }).join('\n');
 
   final chart = _donutChart(total, active, disabled, locked);
-  final activePercent = total > 0 ? (active / total * 100).round() : 0;
   final disabledPercent = total > 0 ? (disabled / total * 100).round() : 0;
   final lockedPercent = total > 0 ? (locked / total * 100).round() : 0;
+  final activePercent = total > 0 ? (100 - disabledPercent - lockedPercent).clamp(0, 100) : 0;
 
   String legendRow(String color, String label, int count, int pct) =>
       '<div style="display:flex;align-items:center;gap:.6rem;padding:.45rem 0;border-bottom:1px solid var(--gray-100);">'
@@ -1015,7 +1018,7 @@ String renderDashboard(String username, Map<String, int> stats, List<AuditEntry>
 
   return _layout(username, 'Dashboard', '''
     <div style="background:linear-gradient(135deg,#1a1d27 0%,#252a3d 100%);border-radius:14px;padding:2rem 2rem 1.75rem;margin-bottom:1.5rem;position:relative;overflow:hidden;">
-      <div style="position:absolute;top:-30px;right:-30px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(84,105,212,.25) 0%,transparent 70%);pointer-events:none;"></div>
+      <div style="position:absolute;top:-30px;right:-30px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(37,99,235,.25) 0%,transparent 70%);pointer-events:none;"></div>
       <div style="position:absolute;bottom:-40px;left:30%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(124,92,219,.15) 0%,transparent 70%);pointer-events:none;"></div>
       <div style="position:absolute;top:1.1rem;right:1.25rem;display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;">
         <div style="display:flex;align-items:center;gap:.4rem;font:500 10px var(--mono);color:rgba(255,255,255,.28);">
@@ -1024,7 +1027,7 @@ String renderDashboard(String username, Map<String, int> stats, List<AuditEntry>
           <a id="refresh-now" href="#" style="color:rgba(255,255,255,.35);text-decoration:none;border:1px solid rgba(255,255,255,.12);border-radius:4px;padding:.1rem .35rem;font:500 9px var(--mono);transition:all .12s;" onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,.4)'" onmouseout="this.style.color='rgba(255,255,255,.35)';this.style.borderColor='rgba(255,255,255,.12)'">↺</a>
         </div>
         <div style="width:90px;height:2px;background:rgba(255,255,255,.1);border-radius:1px;overflow:hidden;">
-          <div id="refresh-bar" style="height:100%;width:100%;background:rgba(84,105,212,.6);border-radius:1px;transition:width 1s linear;"></div>
+          <div id="refresh-bar" style="height:100%;width:100%;background:rgba(37,99,235,.6);border-radius:1px;transition:width 1s linear;"></div>
         </div>
       </div>
       <p style="font:600 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.6rem;">Active Directory</p>
@@ -1106,7 +1109,7 @@ String renderDashboard(String username, Map<String, int> stats, List<AuditEntry>
     <div class="card card-pad" style="margin-bottom:1.5rem;">
       <div class="card-section-title" style="margin-bottom:.75rem;">Favoriten</div>
       <div style="display:flex;flex-wrap:wrap;gap:.5rem;">
-        ${favorites.map((f) => '<a href="/user?dn=${Uri.encodeComponent(f.dn)}" style="display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .75rem;background:var(--blue-lt);border:1px solid rgba(84,105,212,.25);border-radius:20px;text-decoration:none;font:500 .82rem var(--sans);color:var(--blue);transition:all .12s;" onmouseover="this.style.background=\'rgba(84,105,212,.2)\'" onmouseout="this.style.background=\'var(--blue-lt)\'">⭐ ${_esc(f.name)}</a>').join('\n')}
+        ${favorites.map((f) => '<a href="/user?dn=${Uri.encodeComponent(f.dn)}" style="display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .75rem;background:var(--blue-lt);border:1px solid rgba(37,99,235,.25);border-radius:20px;text-decoration:none;font:500 .82rem var(--sans);color:var(--blue);transition:all .12s;" onmouseover="this.style.background=\'rgba(37,99,235,.2)\'" onmouseout="this.style.background=\'var(--blue-lt)\'">⭐ ${_esc(f.name)}</a>').join('\n')}
       </div>
     </div>''' : ''}
 
@@ -1168,7 +1171,7 @@ String renderQuickUsers(String username, String title, String subtitle,
           <input type="hidden" name="uac" value="$uac">
           <input type="hidden" name="action" value="enable">
           <input type="hidden" name="back" value="">
-          <button type="submit" class="btn btn-success btn-sm">✓ Aktivieren</button>
+          <button type="submit" class="btn btn-success btn-xs">✓ Aktivieren</button>
         </form>''';
     } else if (isPwExpiring) {
       final daysLeft = u['_daysLeft'] ?? 0;
@@ -1201,13 +1204,15 @@ String renderQuickUsers(String username, String title, String subtitle,
         <div class="card-pad" style="padding-bottom:.5rem;">
           <span style="font:500 .82rem var(--sans);color:var(--gray-500);">${users.length} Benutzer</span>
         </div>
+        <div class="table-wrap">
         <table class="result-table">
           <thead><tr>
             <th>Name</th><th>Benutzername</th><th>E-Mail</th><th>Abteilung</th>
             ${extraCol != null ? '<th>$extraCol</th>' : ''}
           </tr></thead>
           <tbody>$rows</tbody>
-        </table>'''}
+        </table>
+        </div>'''}
     </div>
   ''', active: activeNav);
 }
@@ -1293,6 +1298,7 @@ String renderResults(String username, String query, List<Map<String, dynamic>> r
       </div>
     </div>
     <div class="card">
+      <div class="table-wrap">
       <table class="result-table">
         <thead><tr>
           <th><input type="checkbox" id="check-all" onchange="toggleAll(this)" title="Alle auswählen"></th>
@@ -1306,6 +1312,7 @@ String renderResults(String username, String query, List<Map<String, dynamic>> r
         </tr></thead>
         <tbody>$rows</tbody>
       </table>
+      </div>
     </div>
     <!-- Bulk-Action-Bar -->
     <div id="bulk-bar" style="display:none;position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--navy);color:white;padding:.75rem 1.25rem;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.3);align-items:center;gap:.75rem;z-index:200;flex-wrap:wrap;">
@@ -1531,6 +1538,7 @@ String renderUserDetail(String username, Map<String, dynamic> u, String back,
       </form>
     </div>
     <div class="inline-edit" id="pw-reset" style="margin-top:.5rem;">
+      ${_pwdStatusBox(g('pwdLastSet'), uac, maxPwdAgeDays)}
       <form method="post" action="/password/reset" style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;">
         <input type="hidden" name="dn" value="${_esc(dn)}">
         <input type="hidden" name="back" value="${_esc(back)}">
@@ -1931,7 +1939,7 @@ String renderOuBrowser(String username, List<Map<String, dynamic>> ous) {
       .ou-name:hover { text-decoration:underline; }
       .ou-desc { font:400 .72rem var(--mono); color:var(--gray-400); margin-left:.15rem; }
       .ou-search { width:100%; padding:.65rem 1rem .65rem 2.6rem; border:1.5px solid var(--gray-200); border-radius:8px; font:400 14px var(--sans); outline:none; transition:border-color .15s,box-shadow .15s; }
-      .ou-search:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(84,105,212,.12); }
+      .ou-search:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(37,99,235,.12); }
       .ou-search-wrap { position:relative; margin-bottom:1.25rem; }
       .ou-search-ico { position:absolute; left:.8rem; top:50%; transform:translateY(-50%); color:var(--gray-400); pointer-events:none; }
       li[data-ou-name].hidden { display:none; }
@@ -2087,7 +2095,7 @@ String renderAuditLog(String username, List<AuditEntry> entries) {
 
 // ── Einstellungen ────────────────────────────────────────────────────────────
 
-String renderSettings(String username, Map<String, bool> settings) {
+String renderSettings(String username, Map<String, bool> settings, {String? msg}) {
   final readOnlySelf = settings['readonly_self'] ?? false;
 
   String toggle(String key, bool value, String label, String desc, String icon) {
@@ -2122,6 +2130,24 @@ String renderSettings(String username, Map<String, bool> settings) {
     <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1.25rem;">
       <a href="javascript:history.back()" class="btn btn-ghost btn-sm">← Zurück</a>
       <h1 style="font:700 16px var(--sans);color:var(--gray-800);">Einstellungen</h1>
+    </div>
+
+    ${msg == 'testmail' ? '<div class="alert alert-success" style="margin-bottom:1.25rem;">✓ Testmail wurde gesendet an support.it@somedia.ch.</div>' : ''}
+
+    <div class="card" style="margin-bottom:1.25rem;">
+      <div style="padding:1rem 1.5rem;border-bottom:1px solid var(--gray-100);">
+        <p style="font:700 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--gray-400);">Wochen-Report</p>
+      </div>
+      <div style="padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+        <div>
+          <div style="font:600 14px var(--sans);color:var(--gray-800);">Testmail senden</div>
+          <div style="font:400 .82rem var(--sans);color:var(--gray-500);margin-top:.25rem;">Sendet sofort einen Bericht mit gesperrten Usern &amp; ablaufenden Passwörtern.</div>
+        </div>
+        <a href="/admin/test-mail" class="btn btn-ghost btn-sm" style="white-space:nowrap;">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="margin-right:.35rem;vertical-align:middle;"><rect x="2" y="3.5" width="12" height="9" rx="1.5"/><path d="M2 3.5l6 5.5 6-5.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Testmail senden
+        </a>
+      </div>
     </div>
 
     <div class="card" style="margin-bottom:1.25rem;">
@@ -2333,6 +2359,46 @@ String _pwdExpiryInfo(String? pwdLastSetStr, int uac, int maxPwdAgeDays) {
   if (daysLeft < 0) return '<span style="color:var(--red);">Abgelaufen seit ${-daysLeft} Tagen ($dateStr)</span>';
   if (daysLeft <= 14) return '<span style="color:#92400e;">In $daysLeft Tagen ($dateStr)</span>';
   return 'In $daysLeft Tagen ($dateStr)';
+}
+
+String _pwdStatusBox(String? pwdLastSetStr, int uac, int maxPwdAgeDays) {
+  final neverExpires = (uac & 65536) != 0;
+  final ft = int.tryParse(pwdLastSetStr ?? '0') ?? 0;
+  final mustChange = ft <= 0 && !neverExpires;
+
+  String badgeColor, badgeText, detail, icon;
+
+  if (mustChange) {
+    badgeColor = '#dc2626'; badgeText = 'Muss geändert werden'; icon = '⚠';
+    detail = 'Das Passwort muss bei der nächsten Anmeldung geändert werden.';
+  } else if (neverExpires) {
+    badgeColor = '#2563eb'; badgeText = 'Läuft nie ab'; icon = '🔵';
+    final setStr = ft > 0 ? _formatFileTime(pwdLastSetStr) : '–';
+    detail = 'Gesetzt am: <strong>$setStr</strong>';
+  } else {
+    final unixMs = (ft ~/ 10000) - 11644473600000;
+    final set = DateTime.fromMillisecondsSinceEpoch(unixMs, isUtc: true).toLocal();
+    final expiry = set.add(Duration(days: maxPwdAgeDays));
+    final daysLeft = expiry.difference(DateTime.now()).inDays;
+    final expiryStr = '${expiry.day.toString().padLeft(2,'0')}.${expiry.month.toString().padLeft(2,'0')}.${expiry.year}';
+    final setStr = _formatFileTime(pwdLastSetStr);
+    if (daysLeft < 0) {
+      badgeColor = '#dc2626'; badgeText = 'Abgelaufen'; icon = '⚠';
+      detail = 'Gesetzt am: <strong>$setStr</strong> · Abgelaufen seit <strong>${-daysLeft} Tagen</strong> ($expiryStr)';
+    } else if (daysLeft <= 14) {
+      badgeColor = '#d97706'; badgeText = 'Läuft bald ab'; icon = '⏰';
+      detail = 'Gesetzt am: <strong>$setStr</strong> · Läuft ab in <strong>$daysLeft Tagen</strong> ($expiryStr)';
+    } else {
+      badgeColor = '#16a34a'; badgeText = 'Gültig'; icon = '✓';
+      detail = 'Gesetzt am: <strong>$setStr</strong> · Läuft ab: <strong>$expiryStr</strong> (in $daysLeft Tagen)';
+    }
+  }
+
+  return '''
+  <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.65rem;padding:.6rem .85rem;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;flex-wrap:wrap;">
+    <span style="display:inline-flex;align-items:center;gap:.3rem;background:$badgeColor;color:#fff;border-radius:5px;padding:.2rem .55rem;font:700 .72rem var(--sans);white-space:nowrap;">$icon $badgeText</span>
+    <span style="font-size:.8rem;color:var(--gray-600);">$detail</span>
+  </div>''';
 }
 
 // ── Feedback ──────────────────────────────────────────────────────────────────
@@ -2572,8 +2638,8 @@ String renderUserCompareForm(String username, Map<String, dynamic> userA) {
       <form action="/user/compare" method="get">
         <input type="hidden" name="a" value="${userA['dn'] ?? ''}">
         <div style="margin-bottom:1rem;">
-          <label style="display:block;font:600 .8rem var(--sans);color:var(--gray-600);margin-bottom:.4rem;">DN oder sAMAccountName von Benutzer B:</label>
-          <input type="text" name="b" required placeholder="z.B. CN=Max Muster,OU=Users,DC=..." autofocus
+          <label style="display:block;font:600 .8rem var(--sans);color:var(--gray-600);margin-bottom:.4rem;">Name oder Benutzername von Benutzer B:</label>
+          <input type="text" name="b" required placeholder="z.B. mb0223 oder Max Muster" autofocus
                  style="width:100%;padding:.55rem .85rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.9rem;">
         </div>
         <button type="submit" class="btn btn-primary">⚖ Vergleichen</button>
@@ -2732,75 +2798,6 @@ String renderEffectiveGroups(String username, Map<String, dynamic>? user, String
 
 // ── Feature: CSV Bulk-Update ──────────────────────────────────────────────────
 
-String renderBulkCsvForm(String username, {String? error}) {
-  const exampleCsv = 'sAMAccountName,department,title,telephoneNumber\njsmith,IT-Abteilung,Senior Admin,+41 81 123 45 67\njdoe,Marketing,Manager,+41 81 987 65 43';
-  return _layout(username, 'CSV-Import', '''
-    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-      <a href="/" class="btn btn-ghost btn-sm">← Zurück</a>
-      <div>
-        <h2 style="font-size:1rem;font-weight:600;">CSV Bulk-Update</h2>
-        <p style="font-size:.78rem;color:var(--gray-400);">Mehrere Benutzer gleichzeitig aktualisieren</p>
-      </div>
-    </div>
-    ${error != null ? '<div class="alert alert-error" style="margin-bottom:1rem;">$error</div>' : ''}
-    <div class="card card-pad" style="margin-bottom:1rem;background:var(--blue-lt);border:1px solid #93c5fd;">
-      <p style="font:600 .85rem var(--sans);color:var(--gray-700);margin-bottom:.5rem;">CSV-Format:</p>
-      <ul style="font:400 .8rem var(--mono);color:var(--gray-600);padding-left:1.2rem;line-height:1.8;">
-        <li>Erste Zeile = Header (erstes Feld muss <code>sAMAccountName</code> sein)</li>
-        <li>Weitere Felder: <code>department</code>, <code>title</code>, <code>mail</code>, <code>telephoneNumber</code>, <code>description</code> etc.</li>
-        <li>Trennzeichen: Komma</li>
-      </ul>
-      <pre style="margin-top:.75rem;font-size:.8rem;background:rgba(255,255,255,.5);padding:.5rem .75rem;border-radius:6px;line-height:1.6;">$exampleCsv</pre>
-    </div>
-    <div class="card card-pad">
-      <form method="post" action="/bulk/csv">
-        <div style="margin-bottom:1rem;">
-          <label style="display:block;font:600 .8rem var(--sans);color:var(--gray-600);margin-bottom:.4rem;">CSV-Daten:</label>
-          <textarea name="csv" rows="12" required placeholder="sAMAccountName,department,title&#10;jsmith,IT,Admin" autofocus
-                    style="width:100%;padding:.65rem .85rem;border:1.5px solid var(--gray-200);border-radius:7px;font:400 .875rem var(--mono);resize:vertical;"></textarea>
-        </div>
-        <div style="display:flex;gap:.75rem;">
-          <button type="submit" class="btn btn-primary">Importieren</button>
-          <a href="/" class="btn btn-ghost">Abbrechen</a>
-        </div>
-      </form>
-    </div>
-  ''', active: 'bulkcsv');
-}
-
-String renderBulkCsvResult(String username, List<String> headers, List<Map<String, dynamic>> results) {
-  final ok = results.where((r) => r['success'] == true).length;
-  final rows = results.map((r) {
-    final sam = _esc(r['sam']?.toString() ?? '');
-    final success = r['success'] == true;
-    final error = _esc(r['error']?.toString() ?? '');
-    final dn = r['dn']?.toString() ?? '';
-    return '<tr>'
-        '<td><strong>$sam</strong></td>'
-        '<td>${success ? '<span class="badge badge-active">Erfolg</span>' : '<span class="badge badge-disabled">Fehler</span>'}</td>'
-        '<td style="font-size:.82rem;">${success ? (dn.isNotEmpty ? '<a href="/user?dn=${Uri.encodeComponent(dn)}" style="color:var(--blue);">Details</a>' : '') : '<span style="color:var(--red);">$error</span>'}</td>'
-        '</tr>';
-  }).join('\n');
-
-  return _layout(username, 'CSV-Import Ergebnis', '''
-    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-      <a href="/bulk/csv" class="btn btn-ghost btn-sm">← Neuer Import</a>
-      <div>
-        <h2 style="font-size:1rem;font-weight:600;">Import-Ergebnis</h2>
-        <p style="font-size:.78rem;color:var(--gray-400);">$ok von ${results.length} erfolgreich</p>
-      </div>
-    </div>
-    <div class="alert ${ok == results.length ? 'alert-success' : (ok == 0 ? 'alert-error' : '')}" style="margin-bottom:1rem;${ok > 0 && ok < results.length ? 'background:var(--amber-lt);border:1px solid #fcd34d;color:var(--amber);' : ''}">
-      $ok von ${results.length} Benutzer erfolgreich aktualisiert. Felder: ${headers.skip(1).map(_esc).join(', ')}
-    </div>
-    <div class="card">
-      <table class="result-table">
-        <thead><tr><th>Benutzername</th><th>Status</th><th>Details</th></tr></thead>
-        <tbody>$rows</tbody>
-      </table>
-    </div>
-  ''', active: 'bulkcsv');
-}
 
 // ── Feature: Computer-Browser ─────────────────────────────────────────────────
 
@@ -3073,45 +3070,100 @@ String renderDirectory(String username, List<Map<String, dynamic>> users) {
     final uac = int.tryParse(u['userAccountControl']?.toString() ?? '0') ?? 0;
     final disabled = (uac & 2) != 0;
     final detailUrl = '/user?dn=${Uri.encodeComponent(dn)}';
-    return '<tr class="dir-row">'
+    // Nur Ziffern aus Nummern, für Teilnummern-Suche (z.B. letzte 4 Ziffern)
+    final phoneDigits = phone.replaceAll(RegExp(r'\D'), '');
+    final mobileDigits = mobile.replaceAll(RegExp(r'\D'), '');
+    return '<tr class="dir-row" '
+        'data-name="${cn.toLowerCase()} ${sam.toLowerCase()}" '
+        'data-dept="${dept.toLowerCase()}" '
+        'data-phone="$phoneDigits $mobileDigits">'
         '<td onclick="location.href=\'$detailUrl\'" style="cursor:pointer;"><div class="avatar-placeholder">$initial</div></td>'
         '<td onclick="location.href=\'$detailUrl\'" style="cursor:pointer;"><strong>${disabled ? '<s>' : ''}$cn${disabled ? '</s>' : ''}</strong><br><span style="font-size:.75rem;color:var(--gray-400);">$sam</span></td>'
-        '<td onclick="location.href=\'$detailUrl\'" style="cursor:pointer;font-size:.85rem;">$dept</td>'
-        '<td style="font-size:.85rem;">${phone.isNotEmpty ? '<a href="tel:$phone" style="color:inherit;text-decoration:none;">$phone</a>' : '<em style="color:var(--gray-300);">–</em>'}</td>'
-        '<td style="font-size:.85rem;">${mobile.isNotEmpty ? '<a href="tel:$mobile" style="color:inherit;text-decoration:none;">$mobile</a>' : '<em style="color:var(--gray-300);">–</em>'}</td>'
-        '<td style="font-size:.85rem;">${mail.isNotEmpty ? '<a href="mailto:$mail" style="color:var(--blue);text-decoration:none;">$mail</a>' : '<em style="color:var(--gray-300);">–</em>'}</td>'
+        '<td onclick="location.href=\'$detailUrl\'" style="cursor:pointer;font-size:.9rem;">$dept</td>'
+        '<td style="font-size:.9rem;white-space:nowrap;">${phone.isNotEmpty ? '<a href="tel:$phone" style="color:inherit;text-decoration:none;">📞 $phone</a>' : '<em style="color:var(--gray-300);">–</em>'}</td>'
+        '<td style="font-size:.9rem;white-space:nowrap;">${mobile.isNotEmpty ? '<a href="tel:$mobile" style="color:inherit;text-decoration:none;">📱 $mobile</a>' : '<em style="color:var(--gray-300);">–</em>'}</td>'
+        '<td style="font-size:.9rem;">${mail.isNotEmpty ? '<a href="mailto:$mail" style="color:var(--blue);text-decoration:none;">$mail</a>' : '<em style="color:var(--gray-300);">–</em>'}</td>'
         '</tr>';
   }).join('\n');
 
   return _layout(username, 'Telefonverzeichnis', '''
+    <style>
+      .dir-filter-wrap { display:flex; gap:.75rem; flex-wrap:wrap; }
+      .dir-filter-wrap input { flex:1; min-width:180px; padding:.6rem .9rem; border:1.5px solid var(--gray-200); border-radius:8px; font:400 14px var(--sans); transition:border-color .15s,box-shadow .15s; }
+      .dir-filter-wrap input:focus { outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+      .dir-filter-wrap .filter-label { display:block; font:600 10px var(--sans); letter-spacing:.06em; text-transform:uppercase; color:var(--gray-400); margin-bottom:.3rem; }
+      #dir-count { font:500 13px var(--sans); color:var(--gray-400); padding:.5rem 1rem .25rem; }
+    </style>
     <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap;">
       <div style="flex:1;">
-        <h2 style="font-size:1rem;font-weight:600;">Telefonverzeichnis</h2>
-        <p style="font-size:.78rem;color:var(--gray-400);">${users.length} Einträge mit Telefonnummer oder Mobilnummer</p>
+        <h2 style="font-size:1.05rem;font-weight:700;">Telefonliste</h2>
+        <p style="font-size:.82rem;color:var(--gray-400);margin-top:.15rem;">${users.length} Einträge · Telefon &amp; Mobil</p>
       </div>
       <a href="/export/directory" class="btn btn-ghost btn-sm">⬇ CSV exportieren</a>
     </div>
+
     <div class="card card-pad" style="margin-bottom:1rem;">
-      <input type="text" id="dir-search" placeholder="Filtern nach Name, Abteilung, Telefon..."
-             oninput="filterDirectory(this.value)"
-             style="width:100%;padding:.55rem .85rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.9rem;">
+      <div class="dir-filter-wrap">
+        <div style="flex:2;min-width:200px;">
+          <span class="filter-label">Name oder Abteilung</span>
+          <input type="text" id="dir-filter-name"
+                 placeholder="z.B. Müller oder IT-Abteilung"
+                 oninput="dirFilter()">
+        </div>
+        <div style="flex:1;min-width:160px;">
+          <span class="filter-label">Telefon / Mobil (Teilnummer)</span>
+          <input type="text" id="dir-filter-phone"
+                 placeholder="z.B. 1234 oder +41 79"
+                 oninput="dirFilter()">
+        </div>
+      </div>
+      <div id="dir-count" style="display:none;"></div>
     </div>
+
     <div class="card">
-      <table class="result-table" id="dir-table">
-        <thead><tr>
-          <th></th><th>Name</th><th>Abteilung</th><th>Telefon</th><th>Mobil</th><th>E-Mail</th>
-        </tr></thead>
-        <tbody>$rows</tbody>
-      </table>
+      <div class="table-wrap">
+        <table class="result-table" id="dir-table">
+          <thead><tr>
+            <th style="width:44px;"></th>
+            <th>Name</th>
+            <th>Abteilung</th>
+            <th>Telefon</th>
+            <th>Mobil</th>
+            <th>E-Mail</th>
+          </tr></thead>
+          <tbody>$rows</tbody>
+        </table>
+      </div>
       ${users.isEmpty ? '<div class="card-pad"><em style="color:var(--gray-400);">Keine Einträge gefunden.</em></div>' : ''}
     </div>
+
     <script>
-    function filterDirectory(q) {
-      q = q.toLowerCase();
+    function dirFilter() {
+      var nameQ = (document.getElementById('dir-filter-name').value || '').toLowerCase().trim();
+      var rawPhone = (document.getElementById('dir-filter-phone').value || '').trim();
+      // Nur Ziffern aus der Eingabe — so matcht "079 123 45 67" auch auf "1234"
+      var phoneQ = rawPhone.replace(/\\D/g, '');
+
       var rows = document.querySelectorAll('#dir-table .dir-row');
+      var visible = 0;
       rows.forEach(function(row) {
-        row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+        var nameOk = !nameQ ||
+          row.dataset.name.includes(nameQ) ||
+          row.dataset.dept.includes(nameQ);
+        var phoneOk = !phoneQ ||
+          row.dataset.phone.replace(/\\s/g,'').includes(phoneQ);
+        var show = nameOk && phoneOk;
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
       });
+
+      var countEl = document.getElementById('dir-count');
+      if (nameQ || phoneQ) {
+        countEl.style.display = '';
+        countEl.textContent = visible + ' von ${users.length} Einträgen';
+      } else {
+        countEl.style.display = 'none';
+      }
     }
     </script>
   ''', active: 'directory');
@@ -3121,7 +3173,7 @@ String renderDirectory(String username, List<Map<String, dynamic>> users) {
 
 String renderDeptStats(String username, List<MapEntry<String, int>> depts) {
   final maxCount = depts.isEmpty ? 1 : depts.first.value;
-  final colors = ['#5469d4', '#7c5cdb', '#9b6de8', '#6ea6f5', '#4aafdb', '#3dbfa0', '#3dc97a'];
+  final colors = ['#2563eb', '#3b82f6', '#60a5fa', '#6ea6f5', '#4aafdb', '#3dbfa0', '#3dc97a'];
 
   var _barIdx = 0;
   final bars = depts.map((e) {
@@ -3158,86 +3210,6 @@ String renderDeptStats(String username, List<MapEntry<String, int>> depts) {
 
 // ── Feature 4: Bulk PW-Reset ──────────────────────────────────────────────────
 
-String renderBulkPwResetForm(String username, List<Map<String, dynamic>> users) {
-  final rows = users.map((u) {
-    final dn = _esc(u['dn'] as String? ?? '');
-    final cn = _esc(u['cn'] as String? ?? '–');
-    final sam = _esc(u['sAMAccountName'] as String? ?? '–');
-    final dept = _esc(u['department'] as String? ?? '–');
-    return '<tr>'
-        '<td><input type="checkbox" name="dns[]" value="$dn" class="pw-check" onchange="updateCount()"></td>'
-        '<td><strong>$cn</strong></td>'
-        '<td>$sam</td>'
-        '<td>$dept</td>'
-        '</tr>';
-  }).join('\n');
-
-  return _layout(username, 'Bulk PW-Reset', '''
-    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-      <a href="/" class="btn btn-ghost btn-sm">← Zurück</a>
-      <div>
-        <h2 style="font-size:1rem;font-weight:600;">Bulk Passwort-Reset</h2>
-        <p style="font-size:.78rem;color:var(--gray-400);">Passwort-Änderung bei nächster Anmeldung erzwingen</p>
-      </div>
-    </div>
-    <form method="post" action="/bulk/pwreset" id="pw-form">
-      <div class="card card-pad" style="margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;">
-        <div style="display:flex;align-items:center;gap:.75rem;">
-          <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font:500 .85rem var(--sans);">
-            <input type="checkbox" id="select-all" onchange="toggleAllPw(this)"> Alle auswählen
-          </label>
-          <span id="count-label" style="font:500 .82rem var(--mono);color:var(--gray-400);">0 ausgewählt</span>
-        </div>
-        <button type="submit" class="btn btn-primary" id="submit-btn" disabled>🔒 PW-Reset erzwingen</button>
-      </div>
-      <div class="card">
-        <table class="result-table">
-          <thead><tr><th style="width:40px;"></th><th>Name</th><th>Benutzername</th><th>Abteilung</th></tr></thead>
-          <tbody>$rows</tbody>
-        </table>
-        ${users.isEmpty ? '<div class="card-pad"><em style="color:var(--gray-400);">Keine aktiven Benutzer gefunden.</em></div>' : ''}
-      </div>
-    </form>
-    <script>
-    function updateCount() {
-      var checked = document.querySelectorAll('.pw-check:checked').length;
-      document.getElementById('count-label').textContent = checked + ' ausgewählt';
-      document.getElementById('submit-btn').disabled = checked === 0;
-    }
-    function toggleAllPw(cb) {
-      document.querySelectorAll('.pw-check').forEach(function(c) { c.checked = cb.checked; });
-      updateCount();
-    }
-    </script>
-  ''', active: 'bulkpwreset');
-}
-
-String renderBulkPwResetResult(String username, List<String> success, Map<String, String> errors) {
-  final total = success.length + errors.length;
-  final rows = [
-    ...success.map((dn) => '<tr><td style="font:400 .78rem var(--mono);">${_esc(dn)}</td><td><span class="badge badge-active">Erfolg</span></td><td></td></tr>'),
-    ...errors.entries.map((e) => '<tr><td style="font:400 .78rem var(--mono);">${_esc(e.key)}</td><td><span class="badge badge-disabled">Fehler</span></td><td style="font-size:.82rem;color:var(--red);">${_esc(e.value)}</td></tr>'),
-  ].join('\n');
-
-  return _layout(username, 'Bulk PW-Reset Ergebnis', '''
-    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-      <a href="/bulk/pwreset" class="btn btn-ghost btn-sm">← Zurück</a>
-      <div>
-        <h2 style="font-size:1rem;font-weight:600;">PW-Reset Ergebnis</h2>
-        <p style="font-size:.78rem;color:var(--gray-400);">${success.length} von $total erfolgreich</p>
-      </div>
-    </div>
-    <div class="alert ${errors.isEmpty ? 'alert-success' : (success.isEmpty ? 'alert-error' : '')}" style="margin-bottom:1rem;${success.isNotEmpty && errors.isNotEmpty ? 'background:var(--amber-lt);border:1px solid #fcd34d;color:var(--amber);' : ''}">
-      ${success.length} von $total Benutzer: Passwort-Pflicht bei Anmeldung gesetzt.
-    </div>
-    <div class="card">
-      <table class="result-table">
-        <thead><tr><th>DN</th><th>Status</th><th>Details</th></tr></thead>
-        <tbody>$rows</tbody>
-      </table>
-    </div>
-  ''', active: 'bulkpwreset');
-}
 
 // ── Feature 5: Ablaufende Accounts ───────────────────────────────────────────
 
@@ -3376,7 +3348,7 @@ String renderRolesPage(String username, Map<String, dynamic> roles, {String csrf
     <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
       <h2 style="font-size:1rem;font-weight:600;">Benutzer-Rollen</h2>
     </div>
-    <div class="card card-pad" style="margin-bottom:1rem;background:var(--blue-lt);border-color:rgba(84,105,212,.3);">
+    <div class="card card-pad" style="margin-bottom:1rem;background:var(--blue-lt);border-color:rgba(37,99,235,.3);">
       <p style="font:500 .82rem var(--sans);color:var(--blue);">
         Rollen werden in <code>roles.json</code> neben der ldap_tool.exe gespeichert.
         Benutzer ohne Eintrag erhalten automatisch die Rolle <strong>Admin</strong>.

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -53,6 +53,17 @@ Filter _notFilter(Filter f) => Filter.not(f);
 DN _safeDn(String dn) =>
     DN.fromOctetString(ASN1OctetString(Uint8List.fromList(utf8.encode(dn))));
 
+// LDAP-Attributwerte kommen als ASN1OctetString mit UTF-8 Bytes aus AD.
+// Explizite UTF-8-Dekodierung verhindert Umlaut-Probleme (öäü).
+String _ldapStr(dynamic v) {
+  try {
+    final bytes = (v as dynamic).valueBytes() as Uint8List;
+    return utf8.decode(bytes, allowMalformed: true);
+  } catch (_) {
+    return v.toString();
+  }
+}
+
 class LdapClient {
   final Config config;
   final SessionData session;
@@ -85,6 +96,29 @@ class LdapClient {
     }
   }
 
+  // Paged search — holt alle Einträge in Seiten à pageSize (umgeht AD-Limit 1000)
+  Future<List<SearchEntry>> _pagedSearch(LdapConnection conn, Filter filter, List<String> attrs, {int pageSize = 500}) async {
+    final all = <SearchEntry>[];
+    var paged = SimplePagedResultsControl(size: pageSize);
+    var done = false;
+    while (!done) {
+      final sr = await conn.search(DN(config.baseDn), filter, attrs, controls: [paged]);
+      await for (final entry in sr.stream) {
+        if (entry.dn.toString().isNotEmpty) all.add(entry);
+      }
+      done = true;
+      for (final ctrl in sr.controls) {
+        if (ctrl is SimplePagedResultsControl) {
+          if (!ctrl.isEmptyCookie) {
+            paged = SimplePagedResultsControl(size: pageSize, cookie: ctrl.cookie);
+            done = false;
+          }
+        }
+      }
+    }
+    return all;
+  }
+
   Future<List<Map<String, dynamic>>> searchUsers(String query) async {
     final conn = await _connect();
     final results = <Map<String, dynamic>>[];
@@ -103,8 +137,10 @@ class LdapClient {
       final attrs = ['cn', 'sAMAccountName', 'mail', 'department',
                      'userAccountControl', 'lockoutTime', 'distinguishedName', 'jpegPhoto', 'thumbnailPhoto',
                      'accountExpires', 'pwdLastSet'];
-      final searchResult = await conn.search(DN(config.baseDn), filter, attrs);
-      await for (final entry in searchResult.stream) {
+      final entries = query.isEmpty
+          ? await _pagedSearch(conn, filter, attrs)
+          : await conn.search(DN(config.baseDn), filter, attrs).then((sr) => sr.stream.toList());
+      for (final entry in entries) {
         final dn = entry.dn.toString();
         if (dn.isEmpty) continue;
         final map = <String, dynamic>{'dn': dn};
@@ -116,7 +152,7 @@ class LdapClient {
               map['jpegPhoto'] = 'data:$mime;base64,${base64Encode(bytes)}';
             } catch (_) {}
           } else {
-            map[attr.name] = attr.values.isNotEmpty ? attr.values.first.toString() : '';
+            map[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
           }
         }
         results.add(map);
@@ -156,9 +192,9 @@ class LdapClient {
               map['jpegPhoto'] = 'data:$mime;base64,${base64Encode(bytes)}';
             } catch (_) {}
           } else if (attr.name == 'memberOf') {
-            map['memberOf'] = attr.values.map((v) => v.toString()).toList();
+            map['memberOf'] = attr.values.map((v) => _ldapStr(v)).toList();
           } else {
-            map[attr.name] = attr.values.isNotEmpty ? attr.values.first.toString() : '';
+            map[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
           }
         }
         break;
@@ -226,7 +262,7 @@ class LdapClient {
       await for (final entry in result.stream) {
         final attr = entry.attributes['maxPwdAge'];
         if (attr != null && attr.values.isNotEmpty) {
-          final val = int.tryParse(attr.values.first.toString()) ?? 0;
+          final val = int.tryParse(_ldapStr(attr.values.first)) ?? 0;
           if (val < 0) return (-val / 10000000 / 86400).round();
         }
       }
@@ -273,7 +309,7 @@ class LdapClient {
           if (attr.name == 'member') {
             map['memberCount'] = attr.values.length;
           } else {
-            map[attr.name] = attr.values.isNotEmpty ? attr.values.first.toString() : '';
+            map[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
           }
         }
         results.add(map);
@@ -296,7 +332,7 @@ class LdapClient {
       final memberDns = <String>[];
       await for (final entry in groupResult.stream) {
         final attr = entry.attributes['member'];
-        if (attr != null) memberDns.addAll(attr.values.map((v) => v.toString()));
+        if (attr != null) memberDns.addAll(attr.values.map((v) => _ldapStr(v)));
       }
       for (final memberDn in memberDns) {
         try {
@@ -310,7 +346,7 @@ class LdapClient {
             if (dn.isEmpty) continue;
             final map = <String, dynamic>{'dn': dn};
             for (final attr in entry.attributes.values) {
-              map[attr.name] = attr.values.isNotEmpty ? attr.values.first.toString() : '';
+              map[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
             }
             results.add(map);
           }
@@ -352,7 +388,7 @@ class LdapClient {
         if (dn.isEmpty) continue;
         final map = <String, dynamic>{'dn': dn};
         for (final attr in entry.attributes.values) {
-          map[attr.name] = attr.values.isNotEmpty ? attr.values.first.toString() : '';
+          map[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
         }
         results.add(map);
       }
@@ -380,7 +416,7 @@ class LdapClient {
         if (dn.isEmpty) continue;
         final map = <String, dynamic>{'dn': dn};
         for (final attr in entry.attributes.values) {
-          map[attr.name] = attr.values.isNotEmpty ? attr.values.first.toString() : '';
+          map[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
         }
         results.add(map);
       }
@@ -472,7 +508,7 @@ class LdapClient {
         if (dn.isEmpty) continue;
         final map = <String, dynamic>{'dn': dn};
         for (final attr in entry.attributes.values) {
-          map[attr.name] = attr.values.isNotEmpty ? attr.values.first.toString() : '';
+          map[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
         }
         results.add(map);
       }
@@ -493,10 +529,8 @@ class LdapClient {
         Filter.equals('objectCategory', 'person'),
         Filter.present('sAMAccountName'),
       ]);
-      final searchResult = await conn.search(
-          DN(config.baseDn), filter, ['userAccountControl', 'lockoutTime']);
-      await for (final entry in searchResult.stream) {
-        if (entry.dn.toString().isEmpty) continue;
+      final entries = await _pagedSearch(conn, filter, ['userAccountControl', 'lockoutTime']);
+      for (final entry in entries) {
         total++;
         final uac = int.tryParse(
             entry.attributes['userAccountControl']?.values.first.toString() ?? '0') ?? 0;
@@ -647,7 +681,7 @@ class LdapClient {
         if (dn.isEmpty) continue;
         final map = <String, dynamic>{'dn': dn};
         for (final attr in entry.attributes.values) {
-          map[attr.name] = attr.values.isNotEmpty ? attr.values.first.toString() : '';
+          map[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
         }
         results.add(map);
       }
@@ -678,7 +712,7 @@ class LdapClient {
         if (dn.isEmpty) continue;
         final map = <String, dynamic>{'dn': dn};
         for (final attr in entry.attributes.values) {
-          map[attr.name] = attr.values.isNotEmpty ? attr.values.first.toString() : '';
+          map[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
         }
         results.add(map);
       }
@@ -708,7 +742,7 @@ class LdapClient {
         if (dn.isEmpty) continue;
         final map = <String, dynamic>{'dn': dn};
         for (final attr in entry.attributes.values) {
-          map[attr.name] = attr.values.isNotEmpty ? attr.values.first.toString() : '';
+          map[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
         }
         results.add(map);
       }
@@ -735,7 +769,7 @@ class LdapClient {
       );
       await for (final entry in searchResult.stream) {
         for (final attr in entry.attributes.values) {
-          result[attr.name] = attr.values.isNotEmpty ? attr.values.first.toString() : '';
+          result[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
         }
         break;
       }
@@ -750,7 +784,7 @@ class LdapClient {
         );
         await for (final entry in searchResult2.stream) {
           for (final attr in entry.attributes.values) {
-            result[attr.name] = attr.values.isNotEmpty ? attr.values.first.toString() : '';
+            result[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
           }
           break;
         }
@@ -776,7 +810,7 @@ class LdapClient {
         if (dn.isEmpty) continue;
         final map = <String, dynamic>{'dn': dn};
         for (final attr in entry.attributes.values) {
-          map[attr.name] = attr.values.isNotEmpty ? attr.values.first.toString() : '';
+          map[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
         }
         results.add(map);
       }
@@ -823,7 +857,7 @@ class LdapClient {
         if (dn.isEmpty) continue;
         final map = <String, dynamic>{'dn': dn};
         for (final attr in entry.attributes.values) {
-          map[attr.name] = attr.values.isNotEmpty ? attr.values.first.toString() : '';
+          map[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
         }
         map['isDirect'] = directGroups.contains(dn.toLowerCase());
         results.add(map);
@@ -917,9 +951,9 @@ class LdapClient {
               map['jpegPhoto'] = 'data:$mime;base64,${base64Encode(bytes)}';
             } catch (_) {}
           } else if (attr.name == 'directReports') {
-            map['directReports'] = attr.values.map((v) => v.toString()).toList();
+            map['directReports'] = attr.values.map((v) => _ldapStr(v)).toList();
           } else {
-            map[attr.name] = attr.values.isNotEmpty ? attr.values.first.toString() : '';
+            map[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
           }
         }
         break;
@@ -957,7 +991,7 @@ class LdapClient {
         if (dn.isEmpty) continue;
         final map = <String, dynamic>{'dn': dn};
         for (final attr in entry.attributes.values) {
-          map[attr.name] = attr.values.isNotEmpty ? attr.values.first.toString() : '';
+          map[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
         }
         results.add(map);
       }
@@ -1039,7 +1073,7 @@ class LdapClient {
         if (dn.isEmpty) continue;
         final map = <String, dynamic>{'dn': dn};
         for (final attr in entry.attributes.values) {
-          map[attr.name] = attr.values.isNotEmpty ? attr.values.first.toString() : '';
+          map[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
         }
         results.add(map);
       }
@@ -1094,7 +1128,7 @@ class LdapClient {
         if (dn.isEmpty) continue;
         final map = <String, dynamic>{'dn': dn};
         for (final attr in entry.attributes.values) {
-          map[attr.name] = attr.values.isNotEmpty ? attr.values.first.toString() : '';
+          map[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
         }
         results.add(map);
       }
