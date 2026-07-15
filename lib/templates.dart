@@ -17,8 +17,20 @@ void configureTemplates({
   _appComputerPrefixes = computerPrefixes;
 }
 
-String _searchHistoryPills(List<String> history) {
+String _searchHistoryPills(List<String> history, {bool prominent = false}) {
   if (history.isEmpty) return '';
+  if (prominent) {
+    final pills = history.take(8).map((q) =>
+      '<a href="/search?q=${Uri.encodeComponent(q)}" style="display:inline-flex;align-items:center;gap:.4rem;padding:.45rem .9rem;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:8px;text-decoration:none;font:500 .85rem var(--mono);color:rgba(255,255,255,.85);transition:all .15s;white-space:nowrap;" onmouseover="this.style.background=\'rgba(255,255,255,.2)\';this.style.borderColor=\'rgba(255,255,255,.35)\'" onmouseout="this.style.background=\'rgba(255,255,255,.10)\';this.style.borderColor=\'rgba(255,255,255,.18)\'">'
+      '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="opacity:.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 1.5"/></svg>'
+      '${_esc(q)}</a>'
+    ).join('\n');
+    return '''
+  <div style="margin-top:1.1rem;border-top:1px solid rgba(255,255,255,.08);padding-top:.9rem;">
+    <span style="font:600 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.28);display:block;margin-bottom:.55rem;">Zuletzt gesucht</span>
+    <div style="display:flex;flex-wrap:wrap;gap:.4rem;">$pills</div>
+  </div>''';
+  }
   final pills = history.take(5).map((q) =>
     '<a href="/search?q=${Uri.encodeComponent(q)}" style="display:inline-flex;align-items:center;padding:.25rem .65rem;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:20px;text-decoration:none;font:500 .78rem var(--mono);color:rgba(255,255,255,.55);transition:all .12s;white-space:nowrap;" onmouseover="this.style.background=\'rgba(255,255,255,.15)\';this.style.color=\'rgba(255,255,255,.9)\'" onmouseout="this.style.background=\'rgba(255,255,255,.08)\';this.style.color=\'rgba(255,255,255,.55)\'">${_esc(q)}</a>'
   ).join('\n');
@@ -311,7 +323,8 @@ String _layout(String username, String title, String body, {String active = '', 
     .result-table tbody tr { transition: background .1s; }
     .result-table tbody tr:hover td { background: #f4f5fb; }
     .result-table td:nth-child(1), .result-table th:nth-child(1) { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .result-table td:nth-child(3), .result-table th:nth-child(3) { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .result-table td:nth-child(3), .result-table th:nth-child(3) { max-width: 220px; }
+    .result-table td:nth-child(3) strong { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .result-table td:nth-child(4), .result-table th:nth-child(4) { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .result-table td:nth-child(5), .result-table th:nth-child(5) { width: 1%; white-space: nowrap; }
 
@@ -892,7 +905,7 @@ String renderIndex(String username, {List<String> searchHistory = const []}) => 
              style="background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12);color:#fff;font-size:.95rem;padding:.75rem 1.1rem;">
       <button type="submit" class="btn btn-primary" style="padding:.75rem 1.25rem;font-size:.9rem;">Suchen</button>
     </form>
-    ${_searchHistoryPills(searchHistory)}
+    ${_searchHistoryPills(searchHistory, prominent: true)}
   </div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
     <a href="/groups" class="surf" style="text-decoration:none;display:flex;align-items:center;gap:.85rem;background:var(--surface);border:1px solid var(--gray-200);border-radius:10px;padding:1rem 1.1rem;transition:box-shadow .15s,transform .15s;" onmouseover="this.style.boxShadow='var(--shadow-md)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
@@ -1023,7 +1036,7 @@ String renderDashboard(String username, Map<String, int> stats, List<AuditEntry>
       <div style="position:absolute;top:1.1rem;right:1.25rem;display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;">
         <div style="display:flex;align-items:center;gap:.4rem;font:500 10px var(--mono);color:rgba(255,255,255,.28);">
           <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.5l2 1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span id="refresh-timer">5:00</span>
+          <span id="refresh-timer">2:00</span>
           <a id="refresh-now" href="#" style="color:rgba(255,255,255,.35);text-decoration:none;border:1px solid rgba(255,255,255,.12);border-radius:4px;padding:.1rem .35rem;font:500 9px var(--mono);transition:all .12s;" onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,.4)'" onmouseout="this.style.color='rgba(255,255,255,.35)';this.style.borderColor='rgba(255,255,255,.12)'">↺</a>
         </div>
         <div style="width:90px;height:2px;background:rgba(255,255,255,.1);border-radius:1px;overflow:hidden;">
@@ -1115,7 +1128,7 @@ String renderDashboard(String username, Map<String, int> stats, List<AuditEntry>
 
     <script>
     (function() {
-      var total = 300, remaining = total;
+      var total = 120, remaining = total;
       var timerEl = document.getElementById('refresh-timer');
       var barEl   = document.getElementById('refresh-bar');
       function fmt(s) {
@@ -1236,6 +1249,7 @@ String renderResults(String username, String query, List<Map<String, dynamic>> r
         : disabled
             ? '<span class="badge badge-disabled">Inaktiv</span>'
             : '<span class="badge badge-active">Aktiv</span>';
+    final desc = _esc(u['description'] ?? '');
     final photo = u['jpegPhoto'] as String?;
     final initial = cn.isNotEmpty ? cn[0].toUpperCase() : '?';
     final avatar = photo != null && photo.isNotEmpty
@@ -1265,7 +1279,7 @@ String renderResults(String username, String query, List<Map<String, dynamic>> r
         <input type="checkbox" class="user-check" value="${_esc(dn)}" onchange="updateBulk()">
       </td>
       <td onclick="location.href='$detailUrl'" style="cursor:pointer;">$avatar</td>
-      <td onclick="location.href='$detailUrl'" style="cursor:pointer;"><strong>$cn</strong></td>
+      <td onclick="location.href='$detailUrl'" style="cursor:pointer;"><strong>$cn</strong>${desc.isNotEmpty ? '<br><span style="font-size:.75rem;color:var(--gray-400);font-weight:400;">$desc</span>' : ''}</td>
       <td onclick="location.href='$detailUrl'" style="cursor:pointer;">$sam</td>
       <td onclick="location.href='$detailUrl'" style="cursor:pointer;">$mail</td>
       <td onclick="location.href='$detailUrl'" style="cursor:pointer;">$dept</td>
@@ -1649,9 +1663,11 @@ String renderUserDetail(String username, Map<String, dynamic> u, String back,
           ${field('Abteilung', 'department', g('department'), 'dept')}
           ${field('Titel / Position', 'title', g('title'), 'title')}
           ${field('Firma', 'company', g('company'), 'company')}
+          ${field('Büro', 'physicalDeliveryOfficeName', g('physicalDeliveryOfficeName'), 'office')}
           ${field('Strasse', 'streetAddress', g('streetAddress'), 'street')}
           ${field('Ort', 'l', g('l'), 'city')}
           ${field('PLZ', 'postalCode', g('postalCode'), 'plz')}
+          ${_floorplanBlock(g('physicalDeliveryOfficeName'), g('department'))}
         </div>
       </div>
 
@@ -2448,6 +2464,111 @@ String _esc(String s) => s
     .replaceAll('"', '&quot;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;');
+
+// ── Hausplan ──────────────────────────────────────────────────────────────────
+
+// Abteilung → (Bild, Marker-X%, Marker-Y%)
+const _deptMarkers = <String, (String, double, double)>{
+  'IT-Services':           ('attika.png', 26.0, 68.0),
+  'Kundenservice':         ('2og.png',   50.0, 72.0),
+  'Somedia Distribution':  ('1og.png',   94.0, 45.0),
+  'SO Online Zeitung':     ('1og.png',   24.0, 45.0),
+  'Zeitung Produktion':    ('1og.png',   38.0, 45.0),
+  'Digital & KI':          ('1og.png',   50.0, 28.0),
+  'SO Audio Video':        ('1og.png',   80.0, 45.0),
+  'TV':                    ('2og.png',   18.0, 45.0),
+  'Creation':              ('2og.png',   92.0, 30.0),
+};
+
+// Büro-Code → Bild (Fallback wenn keine Abteilung bekannt)
+String? _floorImg(String office) {
+  final up = office.toUpperCase();
+  if (up.startsWith('AT')) return 'attika.png';
+  if (up.startsWith('2.OG') || up.startsWith('2OG')) return '2og.png';
+  if (up.startsWith('1.OG') || up.startsWith('1OG')) return '1og.png';
+  return null;
+}
+
+String _floorplanBlock(String office, String dept) {
+  if (office.isEmpty) return '';
+  final deptEntry = _deptMarkers[dept];
+  String? img;
+  double? mx, my;
+  if (deptEntry != null) {
+    img = deptEntry.$1; mx = deptEntry.$2; my = deptEntry.$3;
+  } else {
+    img = _floorImg(office);
+  }
+  if (img == null) return '';
+
+  final marker = (mx != null && my != null) ? '''
+    <div style="position:absolute;left:${mx}%;top:${my}%;transform:translate(-50%,-50%);pointer-events:none;z-index:2;">
+      <div style="width:18px;height:18px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 2px #2563eb,0 2px 8px rgba(37,99,235,.5);"></div>
+    </div>''' : '';
+
+  return '''
+  <div class="field-item" style="grid-column:1/-1;">
+    <div class="field-label">Standort – ${_esc(office)}</div>
+    <div style="position:relative;width:100%;margin-top:.5rem;border-radius:8px;overflow:hidden;border:1px solid var(--gray-200);background:#f8f9fa;">
+      <img src="/floorplan/$img" style="width:100%;display:block;">
+      $marker
+    </div>
+  </div>''';
+}
+
+String renderFloorplanPreview(String username) {
+  final colors = ['#2563eb','#dc2626','#16a34a','#d97706','#7c3aed','#0891b2','#db2777','#65a30d'];
+  int colorIdx = 0;
+
+  String planSection(String title, String imgFile) {
+    final depts = _deptMarkers.entries.where((e) => e.value.$1 == imgFile).toList();
+    final startIdx = colorIdx;
+    final markers = StringBuffer();
+    for (var i = 0; i < depts.length; i++) {
+      final e = depts[i];
+      final color = colors[(startIdx + i) % colors.length];
+      markers.write('<div style="position:absolute;left:${e.value.$2}%;top:${e.value.$3}%;transform:translate(-50%,-50%);z-index:2;">'
+          '<div style="width:16px;height:16px;border-radius:50%;background:$color;border:2px solid #fff;box-shadow:0 0 0 1.5px $color,0 2px 6px rgba(0,0,0,.3);"></div>'
+          '<div style="position:absolute;top:18px;left:50%;transform:translateX(-50%);white-space:nowrap;font:600 10px sans-serif;color:$color;background:rgba(255,255,255,.9);padding:1px 4px;border-radius:3px;border:1px solid $color;">${_esc(e.key)}</div>'
+          '</div>');
+    }
+    colorIdx += depts.length;
+
+    final legend = StringBuffer();
+    for (var i = 0; i < depts.length; i++) {
+      final e = depts[i];
+      final color = colors[(startIdx + i) % colors.length];
+      legend.write('<div style="display:flex;align-items:center;gap:.4rem;font:400 .78rem sans-serif;">'
+          '<span style="width:10px;height:10px;border-radius:50%;background:$color;flex-shrink:0;"></span>'
+          '${_esc(e.key)}</div>');
+    }
+
+    return '''
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div style="padding:.75rem 1.25rem;border-bottom:1px solid var(--gray-100);font:700 .85rem var(--sans);color:var(--gray-700);">$title</div>
+      <div style="padding:1rem 1.25rem;">
+        <div style="position:relative;width:100%;border-radius:6px;overflow:hidden;border:1px solid var(--gray-200);background:#f8f9fa;margin-bottom:.75rem;">
+          <img src="/floorplan/$imgFile" style="width:100%;display:block;">
+          ${markers.toString()}
+        </div>
+        ${depts.isEmpty ? '<em style="color:var(--gray-400);font-size:.8rem;">Keine Abteilungen zugewiesen</em>' : '<div style="display:flex;flex-wrap:wrap;gap:.5rem .75rem;">${legend.toString()}</div>'}
+      </div>
+    </div>''';
+  }
+
+  return _layout(username, 'Hausplan Vorschau', '''
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;">
+      <a href="/" class="btn btn-ghost btn-sm">← Zurück</a>
+      <h1 style="font:700 16px var(--sans);color:var(--gray-800);">Hausplan – Abteilungs-Übersicht</h1>
+    </div>
+    <div class="alert" style="margin-bottom:1.25rem;background:var(--blue-lt);border:1px solid #93c5fd;color:var(--blue);">
+      Vorschau aller Abteilungs-Marker. Stimmt etwas nicht? Sag mir welcher Punkt wohin soll.
+    </div>
+    ${planSection('Attika', 'attika.png')}
+    ${planSection('2. Obergeschoss', '2og.png')}
+    ${planSection('1. Obergeschoss', '1og.png')}
+  ''', active: '');
+}
 
 // ── Feature: Inaktive User ────────────────────────────────────────────────────
 

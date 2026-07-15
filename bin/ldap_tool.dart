@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:shelf_router/shelf_router.dart';
@@ -111,6 +112,19 @@ void main() async {
       ..get('/admin/roles', handleRolesPage)
       ..post('/admin/roles', handleRolesPost)
       ..get('/health', (Request r) => handleHealth(r, config))
+      ..get('/floorplan/preview', (Request r) {
+        final session = getSession(extractToken(r.headers['cookie']));
+        if (session == null) return Response.found('/login');
+        return Response.ok(renderFloorplanPreview(session.username), headers: {'content-type': 'text/html; charset=utf-8'});
+      })
+      ..get('/floorplan/<name>', (Request r, String name) async {
+        if (!RegExp(r'^[a-z0-9]+\.png$').hasMatch(name)) return Response.notFound('');
+        final exeDir = File(Platform.resolvedExecutable).parent.path;
+        final file = File('$exeDir/floorplans/$name');
+        if (!await file.exists()) return Response.notFound('');
+        final bytes = await file.readAsBytes();
+        return Response.ok(bytes, headers: {'content-type': 'image/png', 'cache-control': 'max-age=3600'});
+      })
       ..get('/admin/test-mail', (Request r) async {
         await sendWeeklyReport(config);
         return Response.found('/settings?msg=testmail');

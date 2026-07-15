@@ -64,6 +64,7 @@ String _ldapStr(dynamic v) {
   }
 }
 
+
 class LdapClient {
   final Config config;
   final SessionData session;
@@ -133,10 +134,12 @@ class LdapClient {
               Filter.substring('sAMAccountName', '*$query*'),
               Filter.substring('cn', '*$query*'),
               Filter.substring('mail', '*$query*'),
+              Filter.substring('initials', '*$query*'),
+              Filter.substring('description', '*$query*'),
             ]);
       final attrs = ['cn', 'sAMAccountName', 'mail', 'department',
                      'userAccountControl', 'lockoutTime', 'distinguishedName', 'jpegPhoto', 'thumbnailPhoto',
-                     'accountExpires', 'pwdLastSet'];
+                     'accountExpires', 'pwdLastSet', 'description'];
       final entries = query.isEmpty
           ? await _pagedSearch(conn, filter, attrs)
           : await conn.search(DN(config.baseDn), filter, attrs).then((sr) => sr.stream.toList());
@@ -174,6 +177,7 @@ class LdapClient {
         'company', 'streetAddress', 'l', 'postalCode', 'description',
         'userAccountControl', 'lockoutTime', 'memberOf', 'jpegPhoto', 'thumbnailPhoto', 'distinguishedName',
         'whenCreated', 'whenChanged', 'lastLogonTimestamp', 'pwdLastSet', 'accountExpires',
+        'physicalDeliveryOfficeName', 'initials',
       ];
       final result = await conn.search(
         DN(config.baseDn),
