@@ -106,7 +106,7 @@ UserRole getRole(String username) {
       } catch (_) {}
     }
   }
-  return _roles[username.toLowerCase()] ?? UserRole.admin;
+  return _roles[username.toLowerCase()] ?? UserRole.readonly;
 }
 
 void saveRoles(Map<String, UserRole> roles) {
@@ -126,6 +126,35 @@ final _sessions    = <String, SessionData>{};
 final _settings    = <String, Map<String, bool>>{};
 final _favorites   = <String, List<Favorite>>{};
 final _rng = Random.secure();
+
+// ── Login Rate-Limiting ───────────────────────────────────────────────────────
+
+final _loginFailures = <String, (int, DateTime)>{};
+const _maxAttempts = 5;
+const _lockoutMinutes = 15;
+
+bool isLoginBlocked(String username) {
+  final e = _loginFailures[username.toLowerCase()];
+  if (e == null) return false;
+  if (DateTime.now().difference(e.$2).inMinutes >= _lockoutMinutes) {
+    _loginFailures.remove(username.toLowerCase());
+    return false;
+  }
+  return e.$1 >= _maxAttempts;
+}
+
+void recordLoginFailure(String username) {
+  final key = username.toLowerCase();
+  final e = _loginFailures[key];
+  if (e == null || DateTime.now().difference(e.$2).inMinutes >= _lockoutMinutes) {
+    _loginFailures[key] = (1, DateTime.now());
+  } else {
+    _loginFailures[key] = (e.$1 + 1, e.$2);
+  }
+}
+
+void clearLoginFailures(String username) =>
+    _loginFailures.remove(username.toLowerCase());
 
 // ── CSRF ──────────────────────────────────────────────────────────────────────
 
@@ -170,16 +199,8 @@ void _ensureLoaded() {
   } catch (_) {}
 }
 
-void _persist() {
-  try {
-    final map = _sessions.map((token, data) => MapEntry(token, {
-      'username': data.username,
-      'dn': data.dn,
-      'password': data.password,
-    }));
-    _sessionsFile.writeAsStringSync(jsonEncode(map));
-  } catch (_) {}
-}
+// Sessions werden bewusst nicht auf Disk persistiert (Passwörter im Klartext wäre Sicherheitsrisiko).
+// Neustart der App erfordert erneutes Login — akzeptabel für internes Tool.
 
 class GroupClipboard {
   final String sourceUsername;
@@ -199,19 +220,16 @@ GroupClipboard? getClipboard(String? token) =>
 void clearClipboard(String token) => _clipboards.remove(token);
 
 String createSession(SessionData data) {
-  _ensureLoaded();
   final token = List.generate(32, (_) => _rng.nextInt(256))
       .map((b) => b.toRadixString(16).padLeft(2, '0'))
       .join();
   _sessions[token] = data;
   _lastActivity[token] = DateTime.now();
-  _persist();
   return token;
 }
 
 SessionData? getSession(String? token) {
   if (token == null) return null;
-  _ensureLoaded();
   final data = _sessions[token];
   if (data == null) return null;
   // Session-Inaktivitäts-Timeout: 60 Minuten
@@ -230,7 +248,6 @@ void destroySession(String token) {
   _favorites.remove(token);
   _csrf.remove(token);
   _lastActivity.remove(token);
-  _persist();
 }
 
 List<Favorite> getFavorites(String? token) =>
@@ -276,7 +293,7 @@ Future<(String?, SessionData?)> tryLogin(Config config, String username, String 
       port: config.port,
       bindDN: DN(config.bindUser),
       password: config.bindPassword,
-      badCertificateHandler: (cert) => true,
+      badCertificateHandler: (cert) => config.ignoreCert,
     );
     await searcher.open();
     await searcher.bind();
@@ -311,7 +328,7 @@ Future<(String?, SessionData?)> tryLogin(Config config, String username, String 
       port: config.port,
       bindDN: DN(bindDn),
       password: password,
-      badCertificateHandler: (cert) => true,
+      badCertificateHandler: (cert) => config.ignoreCert,
     );
     await userConn.open();
     await userConn.bind();

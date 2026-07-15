@@ -8,6 +8,7 @@ class Config {
   String baseDn;
   int port;
   bool useSsl;
+  bool ignoreCert;
   String adminOu;
   String lagerOu;
   List<String> computerPrefixes;
@@ -30,6 +31,7 @@ class Config {
     required this.baseDn,
     required this.port,
     required this.useSsl,
+    required this.ignoreCert,
     required this.adminOu,
     required this.lagerOu,
     required this.computerPrefixes,
@@ -86,6 +88,7 @@ class Config {
       baseDn: env['BASE_DN'] ?? '',
       port: int.tryParse(env['AD_PORT'] ?? '389') ?? 389,
       useSsl: env['AD_SSL'] == 'true',
+      ignoreCert: env['AD_IGNORE_CERT'] != 'false',
       adminOu: env['ADMIN_OU'] ?? '',
       lagerOu: env['LAGER_OU'] ?? '',
       computerPrefixes: prefixes,

@@ -58,13 +58,14 @@ const _darkCss = '''
   --gray-800: #e2e8f0;
   --text: #e2e8f0;
   --surface: #1a1d27;
+  --bg:      #0d0f14;
   --blue-lt: rgba(37,99,235,.18);
   --green-lt: rgba(26,122,77,.18);
   --red-lt:   rgba(192,40,42,.18);
   --amber-lt: rgba(146,64,14,.18);
 }
-[data-theme="dark"] body { background: #0d0f14; color: #e2e8f0; }
-[data-theme="dark"] .content { background: #0d0f14; }
+[data-theme="dark"] body { background: var(--bg); color: #e2e8f0; }
+[data-theme="dark"] .content { background: var(--bg); }
 [data-theme="dark"] .card { background: #1a1d27; border-color: #2e3450; }
 [data-theme="dark"] .card-pad { background: transparent; }
 [data-theme="dark"] .result-table thead th { background: #1e2130; color: #6b7694; }
@@ -129,6 +130,26 @@ String _layout(String username, String title, String body, {String active = '', 
       try {
         var t = localStorage.getItem('theme');
         if (t === 'dark') document.documentElement.setAttribute('data-theme','dark');
+        var c = localStorage.getItem('ud_colors');
+        if (c) {
+          c = JSON.parse(c);
+          var s = document.documentElement.style;
+          var dark = t === 'dark';
+          if (c.blue)   s.setProperty('--blue',    c.blue);
+          if (c.blueDk) s.setProperty('--blue-dk', c.blueDk);
+          if (c.blueLt) s.setProperty('--blue-lt', c.blueLt);
+          if (c.navy)   s.setProperty('--navy',    c.navy);
+          if (dark) {
+            var bgd = c.bgDark;
+            if (!bgd && c.blue) {
+              var m = c.blue.replace('#','').match(/([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})/);
+              if (m) { var base=[13,15,20]; bgd = '#'+[m[1],m[2],m[3]].map(function(x,i){return ('0'+Math.round(parseInt(x,16)*0.15+base[i]*0.85).toString(16)).slice(-2);}).join(''); }
+            }
+            s.setProperty('--bg', bgd || '#0d0f14');
+          } else {
+            s.setProperty('--bg', c.bg || '#f1f4f9');
+          }
+        }
       } catch(e){}
     })();
   </script>
@@ -153,6 +174,7 @@ String _layout(String username, String title, String body, {String active = '', 
       --gray-600: #4b5263;
       --gray-800: #1a1d27;
       --surface:  #ffffff;
+      --bg:       #f1f4f9;
       --radius: 12px;
       --shadow-xs: 0 1px 2px rgba(0,0,0,.04);
       --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
@@ -161,7 +183,7 @@ String _layout(String username, String title, String body, {String active = '', 
       --mono: 'IBM Plex Mono', ui-monospace, monospace;
     }
 
-    body { font-family: var(--sans); font-size: 15px; background: #f1f4f9; color: var(--gray-800); -webkit-font-smoothing: antialiased; }
+    body { font-family: var(--sans); font-size: 15px; background: var(--bg); color: var(--gray-800); -webkit-font-smoothing: antialiased; }
     .app { display: flex; min-height: 100vh; }
 
     /* ── Sidebar ── */
@@ -528,11 +550,33 @@ function toggleEdit(btn, id) {
   el.style.display = show ? 'block' : 'none';
   btn.textContent = show ? 'Abbrechen' : 'Bearbeiten';
 }
+function _udReapplyBg(dark) {
+  try {
+    var c = localStorage.getItem('ud_colors');
+    if (c) {
+      c = JSON.parse(c);
+      var bg;
+      if (dark) {
+        bg = c.bgDark;
+        if (!bg && c.blue) {
+          var m = c.blue.replace('#','').match(/([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})/);
+          if (m) { var base=[13,15,20]; bg = '#'+[m[1],m[2],m[3]].map(function(x,i){return ('0'+Math.round(parseInt(x,16)*0.15+base[i]*0.85).toString(16)).slice(-2);}).join(''); }
+        }
+        document.documentElement.style.setProperty('--bg', bg || '#0d0f14');
+      } else {
+        document.documentElement.style.setProperty('--bg', c.bg || '#f1f4f9');
+      }
+    } else {
+      document.documentElement.style.removeProperty('--bg');
+    }
+  } catch(e) {}
+}
 function toggleDark() {
   var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   var newTheme = isDark ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', newTheme);
   try { localStorage.setItem('theme', newTheme); } catch(e){}
+  _udReapplyBg(newTheme === 'dark');
   var btn = document.getElementById('dark-toggle');
   if (btn) btn.textContent = newTheme === 'dark' ? '☀' : '🌙';
 }
@@ -788,6 +832,20 @@ function toggleSidebar() {
   Sitzung läuft ab in <strong id="session-warn-timer">5:00</strong>
   &nbsp;<a href="/" style="color:#92400e;font-weight:700;text-decoration:underline;">Aktiv bleiben</a>
 </div>
+<script>
+(function() {
+  var m = document.querySelector('meta[name="csrf-token"]');
+  if (!m || !m.content) return;
+  var t = m.content;
+  document.querySelectorAll('form').forEach(function(f) {
+    if ((f.method || '').toLowerCase() !== 'post') return;
+    if (f.querySelector('[name="_csrf"]')) return;
+    var i = document.createElement('input');
+    i.type = 'hidden'; i.name = '_csrf'; i.value = t;
+    f.appendChild(i);
+  });
+})();
+</script>
 </body>
 </html>
 ''';
@@ -893,7 +951,7 @@ String renderLogin(String? error) => '''
 
 // ── Index ─────────────────────────────────────────────────────────────────────
 
-String renderIndex(String username, {List<String> searchHistory = const []}) => _layout(username, 'Suche', '''
+String renderIndex(String username, {List<String> searchHistory = const [], String csrfToken = ''}) => _layout(username, 'Suche', '''
   <div style="background:linear-gradient(135deg,#1a1d27 0%,#252a3d 100%);border-radius:14px;padding:2rem 2rem 1.75rem;margin-bottom:1.5rem;position:relative;overflow:hidden;">
     <div style="position:absolute;top:-30px;right:-30px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(37,99,235,.25) 0%,transparent 70%);pointer-events:none;"></div>
     <div style="position:absolute;bottom:-40px;left:30%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(124,92,219,.15) 0%,transparent 70%);pointer-events:none;"></div>
@@ -927,7 +985,7 @@ String renderIndex(String username, {List<String> searchHistory = const []}) => 
       <div><div style="font:600 13px var(--sans);color:var(--gray-800);">Änderungs-Log</div><div style="font-size:.78rem;color:var(--gray-400);margin-top:1px;">Aktivitätsprotokoll</div></div>
     </a>
   </div>
-''', active: 'search');
+''', active: 'search', csrfToken: csrfToken);
 
 // ── Donut Chart (pure SVG, server-rendered) ───────────────────────────────────
 
@@ -1232,7 +1290,7 @@ String renderQuickUsers(String username, String title, String subtitle,
 
 // ── Suchergebnisse (kompakte Liste) ──────────────────────────────────────────
 
-String renderResults(String username, String query, List<Map<String, dynamic>> results, {List<String> searchHistory = const []}) {
+String renderResults(String username, String query, List<Map<String, dynamic>> results, {List<String> searchHistory = const [], String csrfToken = ''}) {
   final rows = results.map((u) {
     final dn = u['dn'] ?? '';
     final cn = _esc(u['cn'] ?? '–');
@@ -1396,7 +1454,7 @@ String renderResults(String username, String query, List<Map<String, dynamic>> r
       });
     }
     </script>
-  ''', active: 'search');
+  ''', active: 'search', csrfToken: csrfToken);
 }
 
 // ── User Detail ───────────────────────────────────────────────────────────────
@@ -1404,7 +1462,7 @@ String renderResults(String username, String query, List<Map<String, dynamic>> r
 String renderUserDetail(String username, Map<String, dynamic> u, String back,
     {GroupClipboard? clipboard, int maxPwdAgeDays = 90,
      bool isOwnUser = false, bool readOnlySelf = false, bool isFavorite = false,
-     Map<String, dynamic>? note}) {
+     Map<String, dynamic>? note, String csrfToken = ''}) {
   final dn = u['dn'] ?? '';
   final cn = _esc(u['cn'] ?? '–');
   final sam = _esc(u['sAMAccountName'] ?? '–');
@@ -1744,7 +1802,7 @@ String renderUserDetail(String username, Map<String, dynamic> u, String back,
 
     </div>
     <script>initPhotoUpload('photo-file','photo-prev','photo-b64','photo-form');</script>
-  ''', active: 'search');
+  ''', active: 'search', csrfToken: csrfToken);
 }
 
 // ── Group Picker ──────────────────────────────────────────────────────────────
@@ -2149,6 +2207,119 @@ String renderSettings(String username, Map<String, bool> settings, {String? msg}
     </div>
 
     ${msg == 'testmail' ? '<div class="alert alert-success" style="margin-bottom:1.25rem;">✓ Testmail wurde gesendet an support.it@somedia.ch.</div>' : ''}
+
+    <div class="card" style="margin-bottom:1.25rem;">
+      <div style="padding:1rem 1.5rem;border-bottom:1px solid var(--gray-100);">
+        <p style="font:700 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--gray-400);">Design &amp; Farben</p>
+      </div>
+      <div style="padding:1.25rem 1.5rem;">
+        <div style="font:600 13px var(--sans);color:var(--gray-700);margin-bottom:.75rem;">Farbschema</div>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.25rem;" id="theme-presets"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+          <div>
+            <label style="font:600 .75rem var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--gray-500);display:block;margin-bottom:.4rem;">Akzentfarbe</label>
+            <div style="display:flex;align-items:center;gap:.6rem;">
+              <input type="color" id="pick-accent" style="width:40px;height:32px;border:1.5px solid var(--gray-200);border-radius:7px;cursor:pointer;padding:2px;">
+              <span id="pick-accent-val" style="font:.85rem var(--mono);color:var(--gray-500);"></span>
+            </div>
+          </div>
+          <div>
+            <label style="font:600 .75rem var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--gray-500);display:block;margin-bottom:.4rem;">Sidebar-Farbe</label>
+            <div style="display:flex;align-items:center;gap:.6rem;">
+              <input type="color" id="pick-navy" style="width:40px;height:32px;border:1.5px solid var(--gray-200);border-radius:7px;cursor:pointer;padding:2px;">
+              <span id="pick-navy-val" style="font:.85rem var(--mono);color:var(--gray-500);"></span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:.5rem;">
+          <button onclick="applyCustomColors()" class="btn btn-primary btn-sm">Übernehmen</button>
+          <button onclick="resetColors()" class="btn btn-ghost btn-sm">Zurücksetzen</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    var _presets = [
+      {name:'Blau',    blue:'#2563eb', blueDk:'#1d4ed8', blueLt:'#eff6ff', navy:'#0f172a', bg:'#e8edf7', bgDark:'#111c34'},
+      {name:'Violett', blue:'#7c3aed', blueDk:'#6d28d9', blueLt:'#f5f3ff', navy:'#1e1b4b', bg:'#ede9fe', bgDark:'#1e1535'},
+      {name:'Grün',    blue:'#16a34a', blueDk:'#15803d', blueLt:'#f0fdf4', navy:'#052e16', bg:'#dcfce7', bgDark:'#0e251c'},
+      {name:'Orange',  blue:'#ea580c', blueDk:'#c2410c', blueLt:'#fff7ed', navy:'#1c1917', bg:'#ffedd5', bgDark:'#2e1a13'},
+      {name:'Rot',     blue:'#dc2626', blueDk:'#b91c1c', blueLt:'#fef2f2', navy:'#450a0a', bg:'#fee2e2', bgDark:'#2c1217'},
+      {name:'Türkis',  blue:'#0d9488', blueDk:'#0f766e', blueLt:'#f0fdfa', navy:'#042f2e', bg:'#ccfbf1', bgDark:'#0d2325'},
+      {name:'Pink',    blue:'#db2777', blueDk:'#be185d', blueLt:'#fdf2f8', navy:'#1f0c17', bg:'#fce7f3', bgDark:'#2c1323'},
+    ];
+    function _applyVars(c) {
+      var r = document.documentElement.style;
+      var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      r.setProperty('--blue',    c.blue);
+      r.setProperty('--blue-dk', c.blueDk);
+      r.setProperty('--blue-lt', c.blueLt);
+      r.setProperty('--navy',    c.navy);
+      r.setProperty('--bg', dark ? (c.bgDark || '#0d0f14') : (c.bg || '#f1f4f9'));
+      localStorage.setItem('ud_colors', JSON.stringify(c));
+    }
+    function resetColors() {
+      localStorage.removeItem('ud_colors');
+      var r = document.documentElement.style;
+      ['--blue','--blue-dk','--blue-lt','--navy','--bg'].forEach(function(v){ r.removeProperty(v); });
+      renderPresets(); syncPickers();
+    }
+    function _hexToRgb(hex) {
+      var m = hex.replace('#','').match(/^([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})/);
+      return m ? [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)] : [0,0,0];
+    }
+    function _rgbToHex(r,g,b) {
+      return '#'+[r,g,b].map(function(v){ return ('0'+Math.max(0,Math.min(255,Math.round(v))).toString(16)).slice(-2); }).join('');
+    }
+    function _darken(hex, pct) {
+      var rgb = _hexToRgb(hex);
+      return _rgbToHex(rgb[0]*(1-pct), rgb[1]*(1-pct), rgb[2]*(1-pct));
+    }
+    function _lighten(hex) {
+      var rgb = _hexToRgb(hex);
+      return _rgbToHex(rgb[0]*0.2+255*0.8, rgb[1]*0.2+255*0.8, rgb[2]*0.2+255*0.8);
+    }
+    function _deriveBgDark(blue) {
+      var rgb = _hexToRgb(blue);
+      return _rgbToHex(rgb[0]*0.15+13*0.85, rgb[1]*0.15+15*0.85, rgb[2]*0.15+20*0.85);
+    }
+    function applyCustomColors() {
+      var blue = document.getElementById('pick-accent').value;
+      var navy = document.getElementById('pick-navy').value;
+      var lt = _lighten(blue);
+      _applyVars({blue: blue, blueDk: _darken(blue, 0.12), blueLt: lt, navy: navy, bg: lt, bgDark: _deriveBgDark(blue)});
+      renderPresets();
+    }
+    function renderPresets() {
+      var cur = ''; try { var s = localStorage.getItem('ud_colors'); if(s) cur = JSON.parse(s).blue; } catch(e){}
+      var wrap = document.getElementById('theme-presets');
+      wrap.innerHTML = _presets.map(function(p, i) {
+        var active = cur === p.blue;
+        return '<button data-pi="'+i+'" style="display:flex;flex-direction:column;align-items:center;gap:.35rem;background:none;border:none;cursor:pointer;padding:.3rem;">'
+          +'<span style="width:32px;height:32px;border-radius:50%;background:'+p.blue+';display:block;border:3px solid '+(active?'var(--gray-700)':'transparent')+';box-shadow:0 1px 4px rgba(0,0,0,.15);"></span>'
+          +'<span style="font:500 .7rem var(--sans);color:var(--gray-600);">'+p.name+'</span>'
+          +'</button>';
+      }).join('');
+      wrap.querySelectorAll('button[data-pi]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          _applyVars(_presets[parseInt(this.dataset.pi)]);
+          renderPresets(); syncPickers();
+        });
+      });
+    }
+    function syncPickers() {
+      var cs = getComputedStyle(document.documentElement);
+      var blue = cs.getPropertyValue('--blue').trim() || '#2563eb';
+      var navy = cs.getPropertyValue('--navy').trim() || '#0f172a';
+      document.getElementById('pick-accent').value = blue;
+      document.getElementById('pick-navy').value   = navy;
+      document.getElementById('pick-accent-val').textContent = blue;
+      document.getElementById('pick-navy-val').textContent   = navy;
+    }
+    document.getElementById('pick-accent').addEventListener('input', function(){ document.getElementById('pick-accent-val').textContent = this.value; });
+    document.getElementById('pick-navy').addEventListener('input',   function(){ document.getElementById('pick-navy-val').textContent   = this.value; });
+    renderPresets(); syncPickers();
+    </script>
 
     <div class="card" style="margin-bottom:1.25rem;">
       <div style="padding:1rem 1.5rem;border-bottom:1px solid var(--gray-100);">

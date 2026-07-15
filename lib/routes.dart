@@ -37,6 +37,19 @@ bool _isPasswordStrong(String pwd) {
 const _html = {
   'content-type': 'text/html; charset=utf-8',
   'cache-control': 'no-store',
+  'x-content-type-options': 'nosniff',
+  'x-frame-options': 'SAMEORIGIN',
+  'referrer-policy': 'same-origin',
+};
+
+Response _forbidden(String username) =>
+    Response(403, body: renderError(username, 'Ungültige Anfrage (CSRF-Fehler). Bitte Seite neu laden.'), headers: _html, encoding: utf8);
+
+const _allowedAttributes = {
+  'givenName', 'sn', 'displayName', 'mail', 'telephoneNumber', 'mobile',
+  'department', 'title', 'company', 'streetAddress', 'l', 'postalCode',
+  'description', 'physicalDeliveryOfficeName', 'initials', 'info',
+  'wWWHomePage', 'manager',
 };
 
 // Alle HTML-Responses explizit als UTF-8 Bytes senden (shelf default ist latin1)
@@ -50,13 +63,18 @@ Response handleLoginPage(Request req) =>
 
 Future<Response> handleLoginPost(Request req, Config config) async {
   final params = Uri.splitQueryString(await req.readAsString());
-  // Login braucht keinen CSRF-Check (Session existiert noch nicht)
-  final (error, data) = await tryLogin(config, params['username'] ?? '', params['password'] ?? '');
+  final username = params['username'] ?? '';
+  if (isLoginBlocked(username)) {
+    return _ok(renderLogin('Account temporär gesperrt (zu viele Fehlversuche). Bitte 15 Minuten warten.'));
+  }
+  final (error, data) = await tryLogin(config, username, params['password'] ?? '');
   if (error != null || data == null) {
+    recordLoginFailure(username);
     return _ok(renderLogin(error ?? 'Unbekannter Fehler.'));
   }
+  clearLoginFailures(username);
   return Response.found('/', headers: {
-    'set-cookie': 'session=${createSession(data)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=86400',
+    'set-cookie': 'session=${createSession(data)}; HttpOnly; Path=/; SameSite=Strict; Max-Age=86400',
   });
 }
 
@@ -101,11 +119,12 @@ Future<Response> handleSearch(Request req, Config config) async {
   if (q.isNotEmpty && token != null) {
     addSearchHistory(token, q);
   }
+  final csrfToken = getCsrfToken(token);
   try {
     final results = await LdapClient(config, session).searchUsers(q);
     final history = getSearchHistory(token);
-    if (q.isEmpty && results.isEmpty) return _ok(renderIndex(session.username, searchHistory: history));
-    return _ok(renderResults(session.username, q, results, searchHistory: history));
+    if (q.isEmpty && results.isEmpty) return _ok(renderIndex(session.username, searchHistory: history, csrfToken: csrfToken));
+    return _ok(renderResults(session.username, q, results, searchHistory: history, csrfToken: csrfToken));
   } catch (e) {
     return _ok(renderError(session.username, 'Suche fehlgeschlagen: $e'));
   }
@@ -137,7 +156,7 @@ Future<Response> handleUserDetail(Request req, Config config) async {
     return _ok(renderUserDetail(session.username, user, back,
         clipboard: clipboard, maxPwdAgeDays: maxPwdAgeDays,
         isOwnUser: isOwnUser, readOnlySelf: readOnlySelf, isFavorite: isFav,
-        note: userNote));
+        note: userNote, csrfToken: getCsrfToken(token)));
   } catch (e) {
     return _ok(renderError(session.username, 'User laden fehlgeschlagen: $e'));
   }
@@ -151,11 +170,13 @@ Future<Response> handleModify(Request req, Config config) async {
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
   if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   final dn = params['dn'] ?? '';
   final attribute = params['attribute'] ?? '';
   final value = params['value'] ?? '';
   final back = params['back'] ?? '';
   if (dn.isEmpty || attribute.isEmpty) return Response.badRequest(body: 'Fehlende Parameter');
+  if (!_allowedAttributes.contains(attribute)) return _ok(renderError(session.username, 'Attribut "$attribute" nicht erlaubt.'));
   if (dn.toLowerCase() == session.dn.toLowerCase() && getSessionSetting(token, 'readonly_self')) {
     return _ok(renderError(session.username, 'Nur-Lesen aktiv: eigener Account kann nicht bearbeitet werden.'));
   }
@@ -418,6 +439,7 @@ Future<Response> handlePasswordReset(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final dn = params['dn'] ?? '';
   final password = params['password'] ?? '';
@@ -441,6 +463,7 @@ Future<Response> handleAccountToggle(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final dn = params['dn'] ?? '';
   final uac = int.tryParse(params['uac'] ?? '0') ?? 0;
@@ -460,6 +483,7 @@ Future<Response> handleAccountUnlock(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final dn = params['dn'] ?? '';
   final back = params['back'] ?? '';

@@ -79,7 +79,7 @@ class LdapClient {
         port: config.port,
         bindDN: DN(session.dn),
         password: session.password,
-        badCertificateHandler: (cert) => true,
+        badCertificateHandler: (cert) => config.ignoreCert,
       );
       await conn.open().timeout(
         const Duration(seconds: 10),
