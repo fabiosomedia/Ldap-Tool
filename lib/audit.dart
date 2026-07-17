@@ -41,7 +41,7 @@ void _loadAuditLog() {
   _auditLoaded = true;
   if (!_auditFile.existsSync()) return;
   try {
-    final lines = _auditFile.readAsLinesSync();
+    final lines = _auditFile.readAsStringSync(encoding: utf8).split('\n');
     // Load last 1000 lines (most recent)
     final toLoad = lines.length > 1000 ? lines.sublist(lines.length - 1000) : lines;
     for (final line in toLoad.reversed) {
@@ -61,7 +61,7 @@ void auditLog(String actor, String action, String targetDn, [String details = ''
   if (_log.length > 1000) _log.removeLast();
   // Append to JSONL file
   try {
-    _auditFile.writeAsStringSync('${jsonEncode(entry.toJson())}\n', mode: FileMode.append);
+    _auditFile.writeAsStringSync('${jsonEncode(entry.toJson())}\n', mode: FileMode.append, encoding: utf8);
   } catch (_) {}
 }
 

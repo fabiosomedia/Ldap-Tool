@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 import 'audit.dart';
 import 'auth.dart';
@@ -21,22 +22,22 @@ String _searchHistoryPills(List<String> history, {bool prominent = false}) {
   if (history.isEmpty) return '';
   if (prominent) {
     final pills = history.take(8).map((q) =>
-      '<a href="/search?q=${Uri.encodeComponent(q)}" style="display:inline-flex;align-items:center;gap:.4rem;padding:.45rem .9rem;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:8px;text-decoration:none;font:500 .85rem var(--mono);color:rgba(255,255,255,.85);transition:all .15s;white-space:nowrap;" onmouseover="this.style.background=\'rgba(255,255,255,.2)\';this.style.borderColor=\'rgba(255,255,255,.35)\'" onmouseout="this.style.background=\'rgba(255,255,255,.10)\';this.style.borderColor=\'rgba(255,255,255,.18)\'">'
+      '<a href="/search?q=${Uri.encodeComponent(q)}" style="display:inline-flex;align-items:center;gap:.4rem;padding:.45rem .9rem;background:#2e3450;border:1px solid #3d4560;border-radius:8px;text-decoration:none;font:500 .85rem var(--mono);color:#c8d0e0;transition:all .15s;white-space:nowrap;" onmouseover="this.style.background=\'#3d4560\';this.style.borderColor=\'#5a6280\'" onmouseout="this.style.background=\'#2e3450\';this.style.borderColor=\'#3d4560\'">'
       '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="opacity:.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 1.5"/></svg>'
       '${_esc(q)}</a>'
     ).join('\n');
     return '''
-  <div style="margin-top:1.1rem;border-top:1px solid rgba(255,255,255,.08);padding-top:.9rem;">
-    <span style="font:600 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.28);display:block;margin-bottom:.55rem;">Zuletzt gesucht</span>
+  <div style="margin-top:1.1rem;border-top:1px solid #2e3450;padding-top:.9rem;">
+    <span style="font:600 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#6b7694;display:block;margin-bottom:.55rem;">Zuletzt gesucht</span>
     <div style="display:flex;flex-wrap:wrap;gap:.4rem;">$pills</div>
   </div>''';
   }
   final pills = history.take(5).map((q) =>
-    '<a href="/search?q=${Uri.encodeComponent(q)}" style="display:inline-flex;align-items:center;padding:.25rem .65rem;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:20px;text-decoration:none;font:500 .78rem var(--mono);color:rgba(255,255,255,.55);transition:all .12s;white-space:nowrap;" onmouseover="this.style.background=\'rgba(255,255,255,.15)\';this.style.color=\'rgba(255,255,255,.9)\'" onmouseout="this.style.background=\'rgba(255,255,255,.08)\';this.style.color=\'rgba(255,255,255,.55)\'">${_esc(q)}</a>'
+    '<a href="/search?q=${Uri.encodeComponent(q)}" style="display:inline-flex;align-items:center;padding:.25rem .65rem;background:#2e3450;border:1px solid #3d4560;border-radius:20px;text-decoration:none;font:500 .78rem var(--mono);color:#8891a8;transition:all .12s;white-space:nowrap;" onmouseover="this.style.background=\'#3d4560\';this.style.color=\'#e2e8f0\'" onmouseout="this.style.background=\'#2e3450\';this.style.color=\'#8891a8\'">${_esc(q)}</a>'
   ).join('\n');
   return '''
   <div style="display:flex;align-items:center;gap:.5rem;margin-top:.75rem;flex-wrap:wrap;">
-    <span style="font:400 .72rem var(--mono);color:rgba(255,255,255,.28);white-space:nowrap;">Zuletzt:</span>
+    <span style="font:400 .72rem var(--mono);color:#6b7694;white-space:nowrap;">Zuletzt:</span>
     $pills
   </div>''';
 }
@@ -59,10 +60,10 @@ const _darkCss = '''
   --text: #e2e8f0;
   --surface: #1a1d27;
   --bg:      #0d0f14;
-  --blue-lt: rgba(37,99,235,.18);
-  --green-lt: rgba(26,122,77,.18);
-  --red-lt:   rgba(192,40,42,.18);
-  --amber-lt: rgba(146,64,14,.18);
+  --blue-lt: #1a2540;
+  --green-lt: #1a2e24;
+  --red-lt:   #2e1a1a;
+  --amber-lt: #2e2010;
 }
 [data-theme="dark"] body { background: var(--bg); color: #e2e8f0; }
 [data-theme="dark"] .content { background: var(--bg); }
@@ -99,7 +100,7 @@ const _darkCss = '''
 [data-theme="dark"] code { background: #252a3d; color: #94a3b8; }
 [data-theme="dark"] .badge-active   { background: rgba(34,197,94,.15);  color: #4ade80; }
 [data-theme="dark"] .badge-disabled { background: rgba(239,68,68,.15);  color: #f87171; }
-[data-theme="dark"] .badge-locked   { background: rgba(245,158,11,.15); color: #fbbf24; }
+[data-theme="dark"] .badge-locked   { background: #252a3d; color: #8891a8; }
 [data-theme="dark"] .alert-success  { background: rgba(34,197,94,.12); color: #4ade80; border-color: rgba(34,197,94,.25); }
 [data-theme="dark"] .alert-error    { background: rgba(239,68,68,.12); color: #f87171; border-color: rgba(239,68,68,.25); }
 [data-theme="dark"] .avatar-placeholder { background: linear-gradient(135deg,#252a3d,#1e2537); }
@@ -119,9 +120,9 @@ String _layout(String username, String title, String body, {String active = '', 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf-token" content="$csrfToken">
-  <meta name="generator" content="UserDesk · Built by Somedia IT">
-  <!-- UserDesk · Powered by Somedia IT · somedia.ch -->
-  <title>$title – LDAP Tool</title>
+  <meta name="generator" content="LDAPatschifig · Built by Somedia IT">
+  <!-- LDAPatschifig · Powered by Somedia IT · somedia.ch -->
+  <title>$title – LDAPatschifig</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -264,6 +265,24 @@ String _layout(String username, String title, String body, {String active = '', 
       50%      { box-shadow: 0 0 0 4px rgba(34,197,94,.08); }
     }
     .conn-tls { margin-left: auto; color: #22c55e; font-size: 9px; letter-spacing: .06em; }
+    .conn-dot.offline { background: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,.22); animation: none; }
+
+    .dash-hero { background: #fff; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); }
+    .dash-hero .dh-label { color: var(--gray-400); }
+    .dash-hero .dh-title { color: var(--gray-800); }
+    .dash-hero .dh-sub   { color: var(--gray-500); }
+    .dash-hero .dh-meta  { color: var(--gray-500); }
+    .dash-hero .dh-meta a { color: var(--gray-600); border-color: var(--gray-200); }
+    .dash-hero .dh-bar-bg { background: var(--gray-100); }
+    .dash-hero .search-box input { background: var(--gray-50) !important; border-color: var(--gray-200) !important; color: var(--gray-800) !important; }
+    [data-theme="dark"] .dash-hero { background: linear-gradient(135deg, #1a1d27 0%, #252a3d 100%); border-color: #2e3450; box-shadow: none; }
+    [data-theme="dark"] .dash-hero .dh-label { color: #6b7694; }
+    [data-theme="dark"] .dash-hero .dh-title { color: #e2e8f0; }
+    [data-theme="dark"] .dash-hero .dh-sub   { color: #8891a8; }
+    [data-theme="dark"] .dash-hero .dh-meta  { color: #6b7694; }
+    [data-theme="dark"] .dash-hero .dh-meta a { color: #8891a8; border-color: #2e3450; }
+    [data-theme="dark"] .dash-hero .dh-bar-bg { background: #1e2130; }
+    [data-theme="dark"] .dash-hero .search-box input { background: #1e2130 !important; border-color: #2e3450 !important; color: #e2e8f0 !important; }
 
     .nav-user { display: flex; align-items: center; gap: .55rem; }
     .nav-user-av {
@@ -334,13 +353,13 @@ String _layout(String username, String title, String body, {String active = '', 
     .table-wrap { overflow-x: auto; width: 100%; }
     .result-table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: .78rem; }
     .result-table thead th {
-      text-align: left; padding: .3rem .2rem;
+      text-align: left; padding: .3rem .6rem;
       background: var(--gray-50);
       border-bottom: 1px solid var(--gray-200);
       font: 600 .67rem var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--gray-400);
       white-space: nowrap;
     }
-    .result-table tbody td { padding: .35rem .2rem; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+    .result-table tbody td { padding: .35rem .6rem; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
     .result-table tbody tr:last-child td { border-bottom: none; }
     .result-table tbody tr { transition: background .1s; }
     .result-table tbody tr:hover td { background: #f4f5fb; }
@@ -368,7 +387,7 @@ String _layout(String username, String title, String body, {String active = '', 
     .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .8; flex-shrink: 0; }
     .badge-active   { background: var(--green-lt); color: #166539; }
     .badge-disabled { background: var(--red-lt);   color: #9b2020; }
-    .badge-locked   { background: var(--amber-lt); color: var(--amber); }
+    .badge-locked   { background: var(--gray-100); color: var(--gray-500); }
 
     /* ── Detail page ── */
     .detail-header {
@@ -394,9 +413,9 @@ String _layout(String username, String title, String body, {String active = '', 
     .dn-text { font: 400 .68rem var(--mono); color: var(--gray-300); word-break: break-all; margin-top: .4rem; line-height: 1.5; }
 
     /* ── Field grid ── */
-    .field-grid { display: grid; grid-template-columns: 1fr 1fr; }
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(10, auto); }
     @media(max-width:640px) { .field-grid { grid-template-columns: 1fr; } }
-    .field-col { padding: 1rem 1.5rem; }
+    .field-col { display: grid; grid-template-rows: subgrid; grid-row: span 10; padding: 1rem 1.5rem; align-content: start; }
     .field-col:first-child { border-right: 1px solid var(--gray-100); }
     .field-item { padding: .65rem 0; border-bottom: 1px solid var(--gray-100); }
     .field-item:last-child { border-bottom: none; }
@@ -458,12 +477,12 @@ String _layout(String username, String title, String body, {String active = '', 
     /* ── Generic table ── */
     table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: .78rem; }
     thead th {
-      text-align: left; padding: .3rem .2rem;
+      text-align: left; padding: .3rem .6rem;
       background: var(--gray-50); border-bottom: 1px solid var(--gray-200);
       font: 600 .67rem var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--gray-400);
       white-space: nowrap;
     }
-    tbody td { padding: .35rem .2rem; border-bottom: 1px solid var(--gray-100); }
+    tbody td { padding: .35rem .6rem; border-bottom: 1px solid var(--gray-100); }
     tbody tr:last-child td { border-bottom: none; }
     tbody tr { transition: background .08s; }
     tbody tr:hover td { background: #f4f5fb; }
@@ -577,15 +596,73 @@ function toggleDark() {
   document.documentElement.setAttribute('data-theme', newTheme);
   try { localStorage.setItem('theme', newTheme); } catch(e){}
   _udReapplyBg(newTheme === 'dark');
-  var btn = document.getElementById('dark-toggle');
-  if (btn) btn.textContent = newTheme === 'dark' ? '☀' : '🌙';
+  var moon = document.getElementById('dark-icon-moon');
+  var sun  = document.getElementById('dark-icon-sun');
+  if (moon) moon.style.display = newTheme === 'dark' ? 'none' : '';
+  if (sun)  sun.style.display  = newTheme === 'dark' ? '' : 'none';
 }
 (function() {
   try {
     var t = localStorage.getItem('theme');
-    var btn = document.getElementById('dark-toggle');
-    if (btn) btn.textContent = t === 'dark' ? '☀' : '🌙';
+    var moon = document.getElementById('dark-icon-moon');
+    var sun  = document.getElementById('dark-icon-sun');
+    if (t === 'dark') {
+      if (moon) moon.style.display = 'none';
+      if (sun)  sun.style.display  = '';
+    }
   } catch(e){}
+})();
+// Klick-Schutz: verhindert Doppelklick auf Buttons und Links
+(function() {
+  // Formulare: Submit-Buttons nach Absenden sperren
+  document.addEventListener('submit', function(e) {
+    var form = e.target;
+    if (form._submitted) { e.preventDefault(); return; }
+    form._submitted = true;
+    var btns = form.querySelectorAll('button[type="submit"],input[type="submit"]');
+    setTimeout(function() {
+      btns.forEach(function(b) {
+        b.disabled = true;
+        b.style.opacity = '.5';
+        b.style.cursor = 'not-allowed';
+      });
+    }, 0);
+  });
+  // Links: nach erstem Klick sperren (ausser # und javascript:)
+  document.addEventListener('click', function(e) {
+    var a = e.target.closest('a[href]');
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    if (href.startsWith('#') || href.startsWith('javascript:') || href === '/logout') return;
+    if (a._clicked) { e.preventDefault(); return; }
+    a._clicked = true;
+    setTimeout(function() {
+      a.style.opacity = '.5';
+      a.style.pointerEvents = 'none';
+    }, 0);
+  });
+})();
+// AD-Verbindungsstatus prüfen
+(function checkAD() {
+  function update() {
+    fetch('/health').then(function(r) {
+      var dot = document.querySelector('.conn-dot');
+      var lbl = document.querySelector('.conn span:last-child');
+      if (!dot) return;
+      if (r.ok) {
+        dot.classList.remove('offline');
+        if (lbl) lbl.textContent = 'AD verbunden';
+      } else {
+        dot.classList.add('offline');
+        if (lbl) lbl.textContent = 'AD nicht erreichbar';
+      }
+    }).catch(function() {
+      var dot = document.querySelector('.conn-dot');
+      if (dot) dot.classList.add('offline');
+    });
+  }
+  update();
+  setInterval(update, 30000);
 })();
 function generatePassword() {
   var chars = 'abcdefghijkmnpqrstuvwxyz';
@@ -716,14 +793,14 @@ function toggleSidebar() {
 <div class="sidebar-backdrop" onclick="toggleSidebar()"></div>
 <div class="mobile-header">
   <button class="hamburger" onclick="toggleSidebar()">&#9776;</button>
-  <div style="font:700 13.5px var(--sans);color:#fff;">UserDesk</div>
+  <div style="font:700 13.5px var(--sans);color:#fff;">LDAPatschifig</div>
 </div>
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-mark">UD</div>
+      <div class="brand-mark">LA</div>
       <div>
-        <div class="brand-name">UserDesk</div>
+        <div class="brand-name">LDAPatschifig</div>
         <div class="brand-sub">Benutzerverwaltung</div>
       </div>
     </div>
@@ -731,7 +808,7 @@ function toggleSidebar() {
     <nav>
       <a href="/" class="nav-link ${active == 'dashboard' ? 'active' : active == 'search' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.2"/><line x1="10.2" y1="10.2" x2="13.5" y2="13.5" stroke-linecap="round"/></svg>
-        Benutzer suchen
+        User suchen
       </a>
       <a href="/search/advanced" class="nav-link ${active == 'advsearch' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.2"/><line x1="10.2" y1="10.2" x2="13.5" y2="13.5" stroke-linecap="round"/><line x1="5" y1="5" x2="9" y2="9" stroke-linecap="round"/></svg>
@@ -786,7 +863,7 @@ function toggleSidebar() {
       </a>
       <a href="/users/service" class="nav-link ${active == 'service' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/><circle cx="13" cy="3" r="1.5" fill="currentColor" stroke="none"/></svg>
-        Service-Konten
+        Servicekonten
       </a>
       <a href="/users/no-email" class="nav-link ${active == 'noemail' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="4" width="12" height="9" rx="1.5"/><path d="M2 6l6 4 6-4"/><line x1="1" y1="15" x2="15" y2="1" stroke-linecap="round"/></svg>
@@ -799,17 +876,14 @@ function toggleSidebar() {
     </nav>
     <div class="nav-group">System</div>
     <nav>
-      <a href="/admin/roles" class="nav-link ${active == 'roles' ? 'active' : ''}">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/><polyline points="11,4 13,6 15,4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Zugriffsrechte
-      </a>
+
       <a href="/config" class="nav-link ${active == 'config' ? 'active' : ''}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="2.5"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.2 3.2l1.4 1.4M11.4 11.4l1.4 1.4M3.2 12.8l1.4-1.4M11.4 4.6l1.4-1.4" stroke-linecap="round"/></svg>
         Einstellungen
       </a>
     </nav>
     <div class="sidebar-foot">
-      <div class="conn"><span class="conn-dot"></span>$_appDomain<span class="conn-tls">636·TLS</span></div>
+      <div class="conn"><span class="conn-dot"></span><span>AD verbunden</span></div>
       <div style="display:flex;align-items:center;gap:.55rem;">
         <a href="/settings" style="display:flex;align-items:center;gap:.55rem;text-decoration:none;flex:1;min-width:0;padding:.3rem .4rem;border-radius:7px;transition:background .12s;" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background=''">
           <div class="nav-user-av">${username.isNotEmpty ? username[0].toUpperCase() : 'A'}</div>
@@ -818,7 +892,7 @@ function toggleSidebar() {
             <div class="nav-user-role" style="color:${active == 'settings' ? 'rgba(255,255,255,.65)' : 'rgba(255,255,255,.3)'};">Einstellungen ${active == 'settings' ? '·' : '→'}</div>
           </div>
         </a>
-        <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Dark/Light Mode">🌙</button>
+        <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Dark/Light Mode"><svg id="dark-icon-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg id="dark-icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg></button>
         <a href="/logout" title="Abmelden" style="color:rgba(255,255,255,.35);text-decoration:none;font:500 11px var(--mono);padding:.3rem .5rem;border:1px solid rgba(255,255,255,.1);border-radius:6px;transition:all .12s;flex-shrink:0;" onmouseover="this.style.borderColor='var(--blue)';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(255,255,255,.1)';this.style.color='rgba(255,255,255,.35)'">↩</a>
       </div>
     </div>
@@ -846,6 +920,23 @@ function toggleSidebar() {
   });
 })();
 </script>
+<button id="scroll-top" onclick="window.scrollTo(0,0)" title="Nach oben"
+  style="display:none;position:fixed;bottom:1.5rem;right:1.5rem;z-index:900;
+         width:2.5rem;height:2.5rem;border-radius:50%;border:none;cursor:pointer;
+         background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.4);
+         align-items:center;justify-content:center;transition:opacity .2s;">
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="3,10 8,5 13,10"/>
+  </svg>
+</button>
+<script>
+(function(){
+  var btn = document.getElementById('scroll-top');
+  window.addEventListener('scroll', function() {
+    btn.style.display = window.scrollY > 200 ? 'flex' : 'none';
+  }, {passive:true});
+})();
+</script>
 </body>
 </html>
 ''';
@@ -857,7 +948,7 @@ String renderLogin(String? error) => '''
 <html lang="de">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Anmelden – UserDesk</title>
+  <title>Anmelden – LDAPatschifig</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -924,18 +1015,18 @@ String renderLogin(String? error) => '''
   <div class="wrap">
     <div class="top">
       <div class="mark">AD</div>
-      <div class="brandtitle">UserDesk</div>
+      <div class="brandtitle">LDAPatschifig</div>
     </div>
     <div class="card">
       <div class="card-top">
         <h2>Anmelden</h2>
         <p class="sub">Nur für autorisierte Administratoren</p>
       </div>
-      ${error != null ? '<div class="error"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6.5"/><line x1="8" y1="5" x2="8" y2="8.5" stroke-linecap="round"/><circle cx="8" cy="11" r=".5" fill="currentColor" stroke="none"/></svg>$error</div>' : ''}
+      ${error != null ? '<div class="error"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6.5"/><line x1="8" y1="5" x2="8" y2="8.5" stroke-linecap="round"/><circle cx="8" cy="11" r=".5" fill="currentColor" stroke="none"/></svg>${_esc(error)}</div>' : ''}
       <form method="post" action="/login">
         <div class="field">
           <label>Benutzername</label>
-          <input type="text" name="username" autofocus autocomplete="username" placeholder="domain\\username">
+          <input type="text" name="username" autofocus autocomplete="username" placeholder="Benutzername, E-Mail oder UPN">
         </div>
         <div class="field">
           <label>Passwort</label>
@@ -955,12 +1046,12 @@ String renderIndex(String username, {List<String> searchHistory = const [], Stri
   <div style="background:linear-gradient(135deg,#1a1d27 0%,#252a3d 100%);border-radius:14px;padding:2rem 2rem 1.75rem;margin-bottom:1.5rem;position:relative;overflow:hidden;">
     <div style="position:absolute;top:-30px;right:-30px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(37,99,235,.25) 0%,transparent 70%);pointer-events:none;"></div>
     <div style="position:absolute;bottom:-40px;left:30%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(124,92,219,.15) 0%,transparent 70%);pointer-events:none;"></div>
-    <p style="font:600 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.6rem;">Active Directory</p>
-    <h1 style="font:700 22px var(--sans);color:#fff;margin-bottom:.4rem;line-height:1.2;">Benutzersuche</h1>
-    <p style="font-size:.875rem;color:rgba(255,255,255,.45);margin-bottom:1.5rem;">Name, Benutzername oder E-Mail-Adresse eingeben</p>
+    <p style="font:600 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:#6b7694;margin-bottom:.6rem;">Active Directory</p>
+    <h1 style="font:700 22px var(--sans);color:#e2e8f0;margin-bottom:.4rem;line-height:1.2;">Benutzersuche</h1>
+    <p style="font-size:.875rem;color:#8891a8;margin-bottom:1.5rem;">Name, Benutzername, E-Mail, Initialen, Beschreibung oder extensionAttribute1</p>
     <form class="search-box" action="/search" method="get" style="position:relative;z-index:1;">
-      <input type="text" name="q" placeholder="z.B. max.muster oder muster@$_appDomain" autofocus
-             style="background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12);color:#fff;font-size:.95rem;padding:.75rem 1.1rem;">
+      <input type="text" name="q" placeholder="Name, Benutzername, E-Mail, Initialen, Beschreibung…" autofocus maxlength="100"
+             style="background:#1e2130;border-color:#2e3450;color:#e2e8f0;font-size:.95rem;padding:.75rem 1.1rem;">
       <button type="submit" class="btn btn-primary" style="padding:.75rem 1.25rem;font-size:.9rem;">Suchen</button>
     </form>
     ${_searchHistoryPills(searchHistory, prominent: true)}
@@ -973,13 +1064,13 @@ String renderIndex(String username, {List<String> searchHistory = const [], Stri
       <div><div style="font:600 13px var(--sans);color:var(--gray-800);">Gruppen</div><div style="font-size:.78rem;color:var(--gray-400);margin-top:1px;">Gruppen durchsuchen</div></div>
     </a>
     <a href="/ou" class="surf" style="text-decoration:none;display:flex;align-items:center;gap:.85rem;background:var(--surface);border:1px solid var(--gray-200);border-radius:10px;padding:1rem 1.1rem;transition:box-shadow .15s,transform .15s;" onmouseover="this.style.boxShadow='var(--shadow-md)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
-      <div style="width:38px;height:38px;border-radius:9px;background:#eff6ff;color:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <div style="width:38px;height:38px;border-radius:9px;background:var(--blue-lt);color:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
         <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="2.5" width="5" height="4" rx="1"/><rect x="8.5" y="9.5" width="5.5" height="4" rx="1"/><path d="M4.5 6.5v3.5h6"/></svg>
       </div>
       <div><div style="font:600 13px var(--sans);color:var(--gray-800);">OU-Browser</div><div style="font-size:.78rem;color:var(--gray-400);margin-top:1px;">Verzeichnisstruktur</div></div>
     </a>
     <a href="/audit" class="surf" style="text-decoration:none;display:flex;align-items:center;gap:.85rem;background:var(--surface);border:1px solid var(--gray-200);border-radius:10px;padding:1rem 1.1rem;transition:box-shadow .15s,transform .15s;" onmouseover="this.style.boxShadow='var(--shadow-md)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
-      <div style="width:38px;height:38px;border-radius:9px;background:#f0f5f2;color:#1a7a4d;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <div style="width:38px;height:38px;border-radius:9px;background:var(--green-lt);color:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
         <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="3" y1="4.5" x2="13" y2="4.5"/><line x1="3" y1="8" x2="13" y2="8"/><line x1="3" y1="11.5" x2="9.5" y2="11.5"/></svg>
       </div>
       <div><div style="font:600 13px var(--sans);color:var(--gray-800);">Änderungs-Log</div><div style="font-size:.78rem;color:var(--gray-400);margin-top:1px;">Aktivitätsprotokoll</div></div>
@@ -1019,7 +1110,7 @@ String _donutChart(int total, int active, int disabled, int locked) {
         'fill="$color" stroke="white" stroke-width="2.5"/>';
   }
 
-  final slices = [(active, '#22c55e'), (disabled, '#ef4444'), (locked, '#f59e0b')];
+  final slices = [(active, '#22c55e'), (disabled, '#ef4444'), (locked, '#94a3b8')];
   final paths = <String>[];
   var angle = 0.0;
   for (final (count, color) in slices) {
@@ -1050,13 +1141,13 @@ String renderDashboard(String username, Map<String, int> stats, List<AuditEntry>
   final locked = stats['locked'] ?? 0;
   final active = total - disabled;
 
-  String statCard(String label, int value, String color, String bgColor, String link, String svgPath) => '''
+  String statCard(String label, int value, String color, String bgColor, String link, String svgPath, {String? statId}) => '''
     <a href="$link" class="surf" style="text-decoration:none;background:var(--surface);border:1px solid var(--gray-200);border-radius:var(--radius);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:1rem;box-shadow:var(--shadow-sm);transition:box-shadow .15s,transform .15s;" onmouseover="this.style.boxShadow='var(--shadow-md)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='var(--shadow-sm)';this.style.transform=''">
       <div style="width:44px;height:44px;border-radius:10px;background:$bgColor;color:$color;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
         $svgPath
       </div>
       <div>
-        <div class="surf-title" style="font:700 22px var(--sans);color:var(--gray-800);">$value</div>
+        <div class="surf-title" style="font:700 22px var(--sans);color:var(--gray-800);"${statId != null ? ' id="$statId"' : ''}>$value</div>
         <div class="surf-sub" style="font:500 12px var(--sans);color:var(--gray-400);margin-top:1px;">$label</div>
       </div>
     </a>''';
@@ -1088,34 +1179,34 @@ String renderDashboard(String username, Map<String, int> stats, List<AuditEntry>
       '</div>';
 
   return _layout(username, 'Dashboard', '''
-    <div style="background:linear-gradient(135deg,#1a1d27 0%,#252a3d 100%);border-radius:14px;padding:2rem 2rem 1.75rem;margin-bottom:1.5rem;position:relative;overflow:hidden;">
+    <div class="dash-hero" style="border-radius:14px;padding:2rem 2rem 1.75rem;margin-bottom:1.5rem;position:relative;overflow:hidden;">
       <div style="position:absolute;top:-30px;right:-30px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(37,99,235,.25) 0%,transparent 70%);pointer-events:none;"></div>
       <div style="position:absolute;bottom:-40px;left:30%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(124,92,219,.15) 0%,transparent 70%);pointer-events:none;"></div>
-      <div style="position:absolute;top:1.1rem;right:1.25rem;display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;">
-        <div style="display:flex;align-items:center;gap:.4rem;font:500 10px var(--mono);color:rgba(255,255,255,.28);">
+      <div class="dh-meta" style="position:absolute;top:1.1rem;right:1.25rem;display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;">
+        <div style="display:flex;align-items:center;gap:.4rem;font:500 10px var(--mono);">
           <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.5l2 1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span id="refresh-timer">2:00</span>
-          <a id="refresh-now" href="#" style="color:rgba(255,255,255,.35);text-decoration:none;border:1px solid rgba(255,255,255,.12);border-radius:4px;padding:.1rem .35rem;font:500 9px var(--mono);transition:all .12s;" onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,.4)'" onmouseout="this.style.color='rgba(255,255,255,.35)';this.style.borderColor='rgba(255,255,255,.12)'">↺</a>
+          <span id="refresh-timer">10:00</span>
+          <a id="refresh-now" href="#" style="text-decoration:none;border-radius:4px;padding:.1rem .35rem;font:500 9px var(--mono);transition:all .12s;">↺</a>
         </div>
-        <div style="width:90px;height:2px;background:rgba(255,255,255,.1);border-radius:1px;overflow:hidden;">
+        <div class="dh-bar-bg" style="width:90px;height:2px;border-radius:1px;overflow:hidden;">
           <div id="refresh-bar" style="height:100%;width:100%;background:rgba(37,99,235,.6);border-radius:1px;transition:width 1s linear;"></div>
         </div>
       </div>
-      <p style="font:600 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.6rem;">Active Directory</p>
-      <h1 style="font:700 22px var(--sans);color:#fff;margin-bottom:.4rem;line-height:1.2;">Benutzersuche</h1>
-      <p style="font-size:.875rem;color:rgba(255,255,255,.45);margin-bottom:1.5rem;">Name, Benutzername oder E-Mail-Adresse eingeben</p>
+      <p class="dh-label" style="font:600 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.6rem;">Active Directory</p>
+      <h1 class="dh-title" style="font:700 22px var(--sans);margin-bottom:.4rem;line-height:1.2;">Benutzersuche</h1>
+      <p class="dh-sub" style="font-size:.875rem;margin-bottom:1.5rem;">Name, Benutzername, E-Mail, Initialen, Beschreibung oder extensionAttribute1</p>
       <form class="search-box" action="/search" method="get" style="position:relative;z-index:1;">
-        <input type="text" name="q" placeholder="z.B. max.muster oder muster@$_appDomain" autofocus
-               style="background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12);color:#fff;font-size:.95rem;padding:.75rem 1.1rem;">
+        <input type="text" name="q" placeholder="Name, Benutzername, E-Mail, Initialen, Beschreibung…" autofocus maxlength="100"
+               style="font-size:.95rem;padding:.75rem 1.1rem;">
         <button type="submit" class="btn btn-primary" style="padding:.75rem 1.25rem;font-size:.9rem;">Suchen</button>
       </form>
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;">
-      ${statCard('Total User', total, 'var(--blue)', 'var(--blue-lt)', '/search', '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="5.5" r="2.8"/><path d="M2.5 14c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/></svg>')}
-      ${statCard('Aktiv', active, '#166539', 'var(--green-lt)', '/search', '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8.5l3.5 3.5 6.5-7" stroke-linecap="round" stroke-linejoin="round"/></svg>')}
-      ${statCard('Deaktiviert', disabled, 'var(--red)', 'var(--red-lt)', '/users/disabled', '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="5.5"/><line x1="4.5" y1="11.5" x2="11.5" y2="4.5" stroke-linecap="round"/></svg>')}
-      ${statCard('Gesperrt', locked, 'var(--amber)', 'var(--amber-lt)', '/users/locked', '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="7.5" width="8" height="6.5" rx="1.5"/><path d="M5.5 7.5V5.5a2.5 2.5 0 0 1 5 0v2" stroke-linecap="round"/></svg>')}
+      ${statCard('Total User', total, 'var(--blue)', 'var(--blue-lt)', '/search', '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="5.5" r="2.8"/><path d="M2.5 14c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/></svg>', statId: 'stat-total')}
+      ${statCard('Aktiv', active, '#166539', 'var(--green-lt)', '/search', '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8.5l3.5 3.5 6.5-7" stroke-linecap="round" stroke-linejoin="round"/></svg>', statId: 'stat-active')}
+      ${statCard('Deaktiviert', disabled, 'var(--red)', 'var(--red-lt)', '/users/disabled', '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="5.5"/><line x1="4.5" y1="11.5" x2="11.5" y2="4.5" stroke-linecap="round"/></svg>', statId: 'stat-disabled')}
+      ${statCard('Gesperrt', locked, 'var(--gray-500)', 'var(--gray-100)', '/users/locked', '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="7.5" width="8" height="6.5" rx="1.5"/><path d="M5.5 7.5V5.5a2.5 2.5 0 0 1 5 0v2" stroke-linecap="round"/></svg>', statId: 'stat-locked')}
     </div>
 
     <div style="display:grid;grid-template-columns:240px 1fr 1fr;gap:1rem;margin-bottom:1.5rem;align-items:start;">
@@ -1137,27 +1228,27 @@ String renderDashboard(String username, Map<String, int> stats, List<AuditEntry>
       <div class="card card-pad">
         <div class="card-section-title">Schnellansichten</div>
         <div style="display:flex;flex-direction:column;gap:.5rem;">
-          <a href="/users/locked" style="display:flex;align-items:center;gap:.85rem;padding:.7rem .9rem;background:var(--amber-lt);border:1px solid #fcd34d;border-radius:8px;text-decoration:none;transition:opacity .12s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+          <a href="/users/locked" style="display:flex;align-items:center;gap:.85rem;padding:.7rem .9rem;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;text-decoration:none;transition:opacity .12s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#92400e" stroke-width="1.6"><rect x="4" y="7.5" width="8" height="6.5" rx="1.5"/><path d="M5.5 7.5V5.5a2.5 2.5 0 0 1 5 0v2" stroke-linecap="round"/></svg>
-            <span style="font:500 13px var(--sans);color:var(--amber);">Gesperrte User</span>
-            <span style="margin-left:auto;font:700 13px var(--mono);color:var(--amber);">$locked</span>
+            <span style="font:500 13px var(--sans);color:#92400e;">Gesperrte User</span>
+            <span class="schnell-locked" style="margin-left:auto;font:700 13px var(--mono);color:#92400e;">$locked</span>
           </a>
-          <a href="/users/disabled" style="display:flex;align-items:center;gap:.85rem;padding:.7rem .9rem;background:var(--red-lt);border:1px solid #f5c0c0;border-radius:8px;text-decoration:none;transition:opacity .12s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--red)" stroke-width="1.6"><circle cx="8" cy="8" r="5.5"/><line x1="4.5" y1="11.5" x2="11.5" y2="4.5" stroke-linecap="round"/></svg>
-            <span style="font:500 13px var(--sans);color:var(--red);">Deaktivierte User</span>
-            <span style="margin-left:auto;font:700 13px var(--mono);color:var(--red);">$disabled</span>
+          <a href="/users/disabled" style="display:flex;align-items:center;gap:.85rem;padding:.7rem .9rem;background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;text-decoration:none;transition:opacity .12s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#dc2626" stroke-width="1.6"><circle cx="8" cy="8" r="5.5"/><line x1="4.5" y1="11.5" x2="11.5" y2="4.5" stroke-linecap="round"/></svg>
+            <span style="font:500 13px var(--sans);color:#dc2626;">Deaktivierte User</span>
+            <span class="schnell-disabled" style="margin-left:auto;font:700 13px var(--mono);color:#dc2626;">$disabled</span>
           </a>
-          <a href="/users/pw-expiring" style="display:flex;align-items:center;gap:.85rem;padding:.7rem .9rem;background:var(--blue-lt);border:1px solid #93c5fd;border-radius:8px;text-decoration:none;transition:opacity .12s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+          <a href="/users/pw-expiring" style="display:flex;align-items:center;gap:.85rem;padding:.7rem .9rem;background:var(--blue-lt);border:1px solid var(--gray-200);border-radius:8px;text-decoration:none;transition:opacity .12s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--blue)" stroke-width="1.6"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.5l2 1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <span style="font:500 13px var(--sans);color:var(--blue);">PW läuft bald ab</span>
           </a>
-          <a href="/groups" style="display:flex;align-items:center;gap:.85rem;padding:.7rem .9rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;text-decoration:none;transition:opacity .12s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#166534" stroke-width="1.6"><circle cx="5.5" cy="5.5" r="2"/><circle cx="10.5" cy="5.5" r="2"/><path d="M1.5 13c0-2 1.8-3.5 4-3.5M14.5 13c0-2-1.8-3.5-4-3.5M8 13c0-2-1.2-3-3-3" stroke-linecap="round"/></svg>
-            <span style="font:500 13px var(--sans);color:#166534;">Gruppen verwalten</span>
+          <a href="/groups" style="display:flex;align-items:center;gap:.85rem;padding:.7rem .9rem;background:var(--green-lt);border:1px solid var(--gray-200);border-radius:8px;text-decoration:none;transition:opacity .12s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--green)" stroke-width="1.6"><circle cx="5.5" cy="5.5" r="2"/><circle cx="10.5" cy="5.5" r="2"/><path d="M1.5 13c0-2 1.8-3.5 4-3.5M14.5 13c0-2-1.8-3.5-4-3.5M8 13c0-2-1.2-3-3-3" stroke-linecap="round"/></svg>
+            <span style="font:500 13px var(--sans);color:var(--green);">Gruppen verwalten</span>
           </a>
-          <a href="/ou" style="display:flex;align-items:center;gap:.85rem;padding:.7rem .9rem;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;text-decoration:none;transition:opacity .12s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#6d28d9" stroke-width="1.6"><rect x="2" y="2" width="5" height="4" rx="1"/><rect x="9" y="2" width="5" height="4" rx="1"/><rect x="5.5" y="10" width="5" height="4" rx="1"/><path d="M4.5 6v1.5h7V6M8 7.5V10" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <span style="font:500 13px var(--sans);color:#6d28d9;">OU-Browser</span>
+          <a href="/ou" style="display:flex;align-items:center;gap:.85rem;padding:.7rem .9rem;background:var(--blue-lt);border:1px solid rgba(37,99,235,.25);border-radius:8px;text-decoration:none;transition:opacity .12s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--blue)" stroke-width="1.6"><rect x="2" y="2" width="5" height="4" rx="1"/><rect x="9" y="2" width="5" height="4" rx="1"/><rect x="5.5" y="10" width="5" height="4" rx="1"/><path d="M4.5 6v1.5h7V6M8 7.5V10" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span style="font:500 13px var(--sans);color:var(--blue);">OU-Browser</span>
           </a>
         </div>
       </div>
@@ -1186,16 +1277,39 @@ String renderDashboard(String username, Map<String, int> stats, List<AuditEntry>
 
     <script>
     (function() {
-      var total = 120, remaining = total;
+      var total = 600, remaining = total;
       var timerEl = document.getElementById('refresh-timer');
       var barEl   = document.getElementById('refresh-bar');
       function fmt(s) {
         var m = Math.floor(s / 60), sec = s % 60;
         return m + ':' + (sec < 10 ? '0' : '') + sec;
       }
+      function refreshStats() {
+        fetch('/api/stats').then(function(r) {
+          if (!r.ok) return;
+          return r.json();
+        }).then(function(d) {
+          if (!d) return;
+          var els = {
+            'stat-total':    d.total,
+            'stat-active':   d.active,
+            'stat-disabled': d.disabled,
+            'stat-locked':   d.locked
+          };
+          for (var id in els) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = els[id];
+          }
+          var lockedEl = document.querySelector('.schnell-locked');
+          if (lockedEl) lockedEl.textContent = d.locked;
+          var disabledEl = document.querySelector('.schnell-disabled');
+          if (disabledEl) disabledEl.textContent = d.disabled;
+        }).catch(function() {});
+        remaining = total;
+      }
       function tick() {
         remaining--;
-        if (remaining <= 0) { location.reload(); return; }
+        if (remaining <= 0) { refreshStats(); return; }
         if (timerEl) timerEl.textContent = fmt(remaining);
         if (barEl)   barEl.style.width = (remaining / total * 100) + '%';
         setTimeout(tick, 1000);
@@ -1203,7 +1317,7 @@ String renderDashboard(String username, Map<String, int> stats, List<AuditEntry>
       setTimeout(tick, 1000);
       var manualBtn = document.getElementById('refresh-now');
       if (manualBtn) manualBtn.addEventListener('click', function(e) {
-        e.preventDefault(); location.reload();
+        e.preventDefault(); refreshStats();
       });
     })();
     </script>
@@ -1232,7 +1346,7 @@ String renderQuickUsers(String username, String title, String subtitle,
         <form method="post" action="/account/unlock" style="margin:0;display:inline;">
           <input type="hidden" name="dn" value="${_esc(dn)}">
           <input type="hidden" name="back" value="">
-          <button type="submit" class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;">🔓 Entsperren</button>
+          <button type="submit" class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-.15em"><rect x="4" y="7" width="8" height="7" rx="1.5"/><path d="M10.5 7V5a2.5 2.5 0 0 0-5 0" stroke-linecap="round"/></svg> Entsperren</button>
         </form>''';
     } else if (isDisabled) {
       final uac = int.tryParse(u['userAccountControl']?.toString() ?? '0') ?? 0;
@@ -1262,7 +1376,7 @@ String renderQuickUsers(String username, String title, String subtitle,
 
   return _layout(username, title, '''
     <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-      <a href="$backHref" class="btn btn-ghost btn-sm">← Zurück</a>
+      <a href="javascript:history.back()" class="btn btn-ghost btn-sm">← Zurück</a>
       <div>
         <h2 style="font-size:1rem;font-weight:600;">$title</h2>
         <p style="font-size:.78rem;color:var(--gray-400);">$subtitle</p>
@@ -1297,6 +1411,7 @@ String renderResults(String username, String query, List<Map<String, dynamic>> r
     final sam = _esc(u['sAMAccountName'] ?? '–');
     final mail = _esc(u['mail'] ?? '–');
     final dept = _esc(u['department'] ?? '–');
+    final kostenstelle = _esc(u['extensionAttribute1'] ?? '–');
     final uac = int.tryParse(u['userAccountControl']?.toString() ?? '0') ?? 0;
     final lockoutTime = int.tryParse(u['lockoutTime']?.toString() ?? '0') ?? 0;
     final disabled = (uac & 2) != 0;
@@ -1320,7 +1435,7 @@ String renderResults(String username, String query, List<Map<String, dynamic>> r
       <form method="post" action="/account/unlock" style="margin:0;display:inline;" onclick="event.stopPropagation()">
         <input type="hidden" name="dn" value="${_esc(dn)}">
         <input type="hidden" name="back" value="${_esc(query)}">
-        <button type="submit" class="btn btn-xs" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;" title="Entsperren">🔓</button>
+        <button type="submit" class="btn btn-xs" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;" title="Entsperren"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="7" width="8" height="7" rx="1.5"/><path d="M10.5 7V5a2.5 2.5 0 0 0-5 0" stroke-linecap="round"/></svg></button>
       </form>''' : '';
     final toggleBtn = '''
       <form method="post" action="/account/toggle" style="margin:0;display:inline;" onclick="event.stopPropagation()">
@@ -1341,6 +1456,7 @@ String renderResults(String username, String query, List<Map<String, dynamic>> r
       <td onclick="location.href='$detailUrl'" style="cursor:pointer;">$sam</td>
       <td onclick="location.href='$detailUrl'" style="cursor:pointer;">$mail</td>
       <td onclick="location.href='$detailUrl'" style="cursor:pointer;">$dept</td>
+      <td onclick="location.href='$detailUrl'" style="cursor:pointer;">$kostenstelle</td>
       <td onclick="location.href='$detailUrl'" style="cursor:pointer;">$badge</td>
       <td onclick="event.stopPropagation()">$unlockBtn$toggleBtn</td>
     </tr>''';
@@ -1353,10 +1469,10 @@ String renderResults(String username, String query, List<Map<String, dynamic>> r
     </style>
     <div class="card card-pad" style="margin-bottom:1rem;background:linear-gradient(135deg,#1a1d27 0%,#252a3d 100%);">
       <form class="search-box" action="/search" method="get">
-        <input type="text" name="q" value="${_esc(query)}" autofocus
+        <input type="text" name="q" value="${_esc(query)}" autofocus maxlength="100"
                style="background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12);color:#fff;">
         <button type="submit" class="btn btn-primary">Suchen</button>
-        ${results.isNotEmpty ? '<a href="/export/search?q=${Uri.encodeComponent(query)}" class="btn btn-ghost" style="color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.06);">⬇ CSV</a>' : ''}
+        ${results.isNotEmpty ? '<a href="/export/search?q=${Uri.encodeComponent(query)}" class="btn btn-ghost" style="color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.06);"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" style="vertical-align:-.15em"><path d="M8 2v8M5 8l3 3 3-3" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 13h10" stroke-linecap="round"/></svg> CSV</a>' : ''}
       </form>
       ${_searchHistoryPills(searchHistory)}
     </div>
@@ -1379,7 +1495,8 @@ String renderResults(String username, String query, List<Map<String, dynamic>> r
           <th onclick="sortTable(this,3)" style="cursor:pointer;user-select:none;">Benutzername ▲▼</th>
           <th onclick="sortTable(this,4)" style="cursor:pointer;user-select:none;">E-Mail ▲▼</th>
           <th onclick="sortTable(this,5)" style="cursor:pointer;user-select:none;">Abteilung ▲▼</th>
-          <th onclick="sortTable(this,6)" style="cursor:pointer;user-select:none;">Status ▲▼</th>
+          <th onclick="sortTable(this,6)" style="cursor:pointer;user-select:none;">Kostenstelle ▲▼</th>
+          <th onclick="sortTable(this,7)" style="cursor:pointer;user-select:none;">Status ▲▼</th>
           <th>Aktionen</th>
         </tr></thead>
         <tbody>$rows</tbody>
@@ -1399,7 +1516,7 @@ String renderResults(String username, String query, List<Map<String, dynamic>> r
       <form method="post" action="/bulk/unlock" style="display:flex;gap:.5rem;align-items:center;margin:0;">
         <input type="hidden" name="back" value="${_esc(query)}">
         <input type="hidden" name="user_dns" id="bulk-dns-unlock">
-        <button type="submit" class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;">🔓 Entsperren</button>
+        <button type="submit" class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-.15em"><rect x="4" y="7" width="8" height="7" rx="1.5"/><path d="M10.5 7V5a2.5 2.5 0 0 0-5 0" stroke-linecap="round"/></svg> Entsperren</button>
       </form>
       <form method="post" action="/bulk/disable" style="display:flex;gap:.5rem;align-items:center;margin:0;">
         <input type="hidden" name="back" value="${_esc(query)}">
@@ -1473,7 +1590,7 @@ String renderUserDetail(String username, Map<String, dynamic> u, String back,
   final badge = disabled
       ? '<span class="badge badge-disabled">Deaktiviert</span>'
       : locked
-          ? '<span class="badge" style="background:#fef3c7;color:#92400e;">Gesperrt</span>'
+          ? '<span class="badge badge-locked">Gesperrt</span>'
           : '<span class="badge badge-active">Aktiv</span>';
   final photo = u['jpegPhoto'] as String?;
   final initial = cn.isNotEmpty ? cn[0].toUpperCase() : '?';
@@ -1531,13 +1648,13 @@ String renderUserDetail(String username, Map<String, dynamic> u, String back,
       ? '''
       <div style="background:var(--blue-lt);border:1px solid #93c5fd;border-radius:8px;padding:.75rem 1rem;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
         <div>
-          <strong style="font-size:.85rem;">📋 Clipboard:</strong>
+          <strong style="font-size:.85rem;display:inline-flex;align-items:center;gap:.3rem;"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="1" width="6" height="3" rx="1"/><rect x="2" y="3" width="12" height="12" rx="1.5"/><line x1="5" y1="7" x2="11" y2="7" stroke-linecap="round"/></svg> Clipboard:</strong>
           <span style="font-size:.82rem;color:var(--gray-600);"> ${clipboard.groupDns.length} Gruppen von <strong>${_esc(clipboard.sourceUsername)}</strong></span>
         </div>
         <form method="post" action="/groups/paste" style="margin:0">
           <input type="hidden" name="user_dn" value="${_esc(dn)}">
           <input type="hidden" name="back" value="${_esc(back)}">
-          <button type="submit" class="btn btn-primary btn-sm">📋 Gruppen einfügen</button>
+          <button type="submit" class="btn btn-primary btn-sm"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-.15em"><rect x="5" y="1" width="6" height="3" rx="1"/><rect x="2" y="3" width="12" height="12" rx="1.5"/><line x1="5" y1="7" x2="11" y2="7" stroke-linecap="round"/><line x1="5" y1="10" x2="9" y2="10" stroke-linecap="round"/></svg> Gruppen einfügen</button>
         </form>
       </div>'''
       : '';
@@ -1564,7 +1681,7 @@ String renderUserDetail(String username, Map<String, dynamic> u, String back,
       <input type="hidden" name="back" value="${_esc(back)}">
       <input type="hidden" name="photo_b64" id="photo-b64">
       <label class="btn btn-ghost btn-sm" style="cursor:pointer;" title="Foto auswählen – wird automatisch hochgeladen">
-        📷 Foto ändern
+        Foto ändern
         <input type="file" accept="image/*" style="display:none" id="photo-file">
       </label>
     </form>
@@ -1572,7 +1689,7 @@ String renderUserDetail(String username, Map<String, dynamic> u, String back,
     <form method="post" action="/photo/delete" style="margin:0">
       <input type="hidden" name="dn" value="${_esc(dn)}">
       <input type="hidden" name="back" value="${_esc(back)}">
-      <button type="submit" class="btn btn-danger btn-sm" title="Foto löschen">🗑</button>
+      <button type="submit" class="btn btn-danger btn-sm" title="Foto löschen"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="2,4 14,4"/><path d="M5 4V2.5h6V4M6 7v5M10 7v5" stroke-linecap="round"/><rect x="3" y="4" width="10" height="10" rx="1.5"/></svg></button>
     </form>''' : ''}
   ''';
 
@@ -1584,7 +1701,7 @@ String renderUserDetail(String username, Map<String, dynamic> u, String back,
       <form method="post" action="/account/unlock" style="margin:0">
         <input type="hidden" name="dn" value="${_esc(dn)}">
         <input type="hidden" name="back" value="${_esc(back)}">
-        <button type="submit" class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;">🔓 Entsperren</button>
+        <button type="submit" class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-.15em"><rect x="4" y="7" width="8" height="7" rx="1.5"/><path d="M10.5 7V5a2.5 2.5 0 0 0-5 0" stroke-linecap="round"/></svg> Entsperren</button>
       </form>''' : ''}
       <form method="post" action="/account/toggle" style="margin:0">
         <input type="hidden" name="dn" value="${_esc(dn)}">
@@ -1595,18 +1712,18 @@ String renderUserDetail(String username, Map<String, dynamic> u, String back,
           ${disabled ? '✓ Aktivieren' : '⊘ Deaktivieren'}
         </button>
       </form>
-      <button class="btn btn-ghost btn-sm" onclick="toggleEdit(this,'pw-reset')">🔑 Passwort</button>
-      <button class="btn btn-ghost btn-sm" onclick="toggleEdit(this,'acc-opts')">⚙ Optionen</button>
-      <a href="/user/clone?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}" class="btn btn-ghost btn-sm">👤 Kopieren</a>
-      <a href="/user/move?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}" class="btn btn-ghost btn-sm">📦 Verschieben</a>
-      <a href="/user/compare?a=${Uri.encodeComponent(dn)}" class="btn btn-ghost btn-sm">⚖ Vergleichen</a>
-      <a href="/user/groups-effective?dn=${Uri.encodeComponent(dn)}" class="btn btn-ghost btn-sm">🌐 Eff. Gruppen</a>
-      <a href="/orgchart?dn=${Uri.encodeComponent(dn)}" class="btn btn-ghost btn-sm">🏢 Org-Chart</a>
+      <button class="btn btn-ghost btn-sm" onclick="toggleEdit(this,'pw-reset')"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-.15em"><circle cx="6" cy="10" r="3"/><path d="M9 7l4-4M11 3l2 2" stroke-linecap="round" stroke-linejoin="round"/></svg> Passwort</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleEdit(this,'acc-opts')">Optionen</button>
+      <a href="/user/clone?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}" class="btn btn-ghost btn-sm"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-.15em"><circle cx="8" cy="6" r="3"/><path d="M2 14a6 6 0 0 1 12 0" stroke-linecap="round"/></svg> Kopieren</a>
+      <a href="/user/move?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}" class="btn btn-ghost btn-sm">Verschieben</a>
+      <a href="/user/compare?a=${Uri.encodeComponent(dn)}" class="btn btn-ghost btn-sm">Vergleichen</a>
+      <a href="/user/groups-effective?dn=${Uri.encodeComponent(dn)}" class="btn btn-ghost btn-sm">Eff. Gruppen</a>
+      <a href="/orgchart?dn=${Uri.encodeComponent(dn)}" class="btn btn-ghost btn-sm"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-.15em"><rect x="6" y="1" width="4" height="3" rx=".8"/><rect x="1" y="11" width="4" height="3" rx=".8"/><rect x="6" y="11" width="4" height="3" rx=".8"/><rect x="11" y="11" width="4" height="3" rx=".8"/><path d="M8 4v4M3 11V9h10v2M8 8v1" stroke-linecap="round"/></svg> Org-Chart</a>
       <form method="post" action="/favorite/toggle" style="margin:0;display:inline;">
         <input type="hidden" name="dn" value="${_esc(dn)}">
         <input type="hidden" name="name" value="${_esc(u['cn'] ?? u['sAMAccountName'] ?? dn)}">
         <input type="hidden" name="back" value="${_esc(back)}">
-        <button type="submit" class="fav-btn ${isFavorite ? 'active' : ''}" title="${isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}">${isFavorite ? '⭐' : '☆'}</button>
+        <button type="submit" class="fav-btn ${isFavorite ? 'active' : ''}" title="${isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}">${isFavorite ? '★' : '☆'}</button>
       </form>
     </div>
     <div class="inline-edit" id="pw-reset" style="margin-top:.5rem;">
@@ -1626,7 +1743,7 @@ String renderUserDetail(String username, Map<String, dynamic> u, String back,
       </div>
       <div id="pw-display-${_esc(dn).hashCode.abs()}-wrap" style="display:none;align-items:center;gap:.5rem;margin-top:.4rem;padding:.35rem .6rem;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:6px;">
         <span style="font:600 .82rem var(--mono);color:var(--gray-800);" id="pw-display-${_esc(dn).hashCode.abs()}"></span>
-        <button type="button" class="btn btn-ghost btn-xs" onclick="copyToClipboard(document.getElementById('pw-display-${_esc(dn).hashCode.abs()}').textContent)">📋 Kopieren</button>
+        <button type="button" class="btn btn-ghost btn-xs" onclick="copyToClipboard(document.getElementById('pw-display-${_esc(dn).hashCode.abs()}').textContent)"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-.15em"><rect x="5" y="1" width="6" height="3" rx="1"/><rect x="2" y="3" width="12" height="12" rx="1.5"/><line x1="5" y1="7" x2="11" y2="7" stroke-linecap="round"/><line x1="5" y1="10" x2="9" y2="10" stroke-linecap="round"/></svg> Kopieren</button>
       </div>
       <script>
       (function(){
@@ -1687,7 +1804,7 @@ String renderUserDetail(String username, Map<String, dynamic> u, String back,
 
   return _layout(username, cn, '''
     <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1rem;">
-      <a href="$backUrl" class="btn btn-ghost btn-sm">← Zurück</a>
+      <a href="javascript:history.back()" class="btn btn-ghost btn-sm">← Zurück</a>
       <span style="font-size:.82rem;color:var(--gray-400);">$sam</span>
     </div>
     $successMsg
@@ -1715,17 +1832,17 @@ String renderUserDetail(String username, Map<String, dynamic> u, String back,
           ${field('Anzeigename', 'displayName', g('displayName'), 'displayName')}
           ${field('E-Mail', 'mail', g('mail'), 'mail')}
           ${field('Telefon', 'telephoneNumber', g('telephoneNumber'), 'phone')}
-          ${field('Mobil', 'mobile', g('mobile'), 'mobile')}
+          ${field('Smartphone', 'mobile', g('mobile'), 'mobile')}
         </div>
         <div class="field-col">
           ${field('Abteilung', 'department', g('department'), 'dept')}
+          ${field('Kostenstelle', 'extensionAttribute1', g('extensionAttribute1'), 'kostenstelle')}
           ${field('Titel / Position', 'title', g('title'), 'title')}
           ${field('Firma', 'company', g('company'), 'company')}
           ${field('Büro', 'physicalDeliveryOfficeName', g('physicalDeliveryOfficeName'), 'office')}
           ${field('Strasse', 'streetAddress', g('streetAddress'), 'street')}
           ${field('Ort', 'l', g('l'), 'city')}
           ${field('PLZ', 'postalCode', g('postalCode'), 'plz')}
-          ${_floorplanBlock(g('physicalDeliveryOfficeName'), g('department'))}
         </div>
       </div>
 
@@ -1764,7 +1881,7 @@ String renderUserDetail(String username, Map<String, dynamic> u, String back,
               <input type="hidden" name="user_dn" value="${_esc(dn)}">
               <input type="hidden" name="user_name" value="$sam">
               <input type="hidden" name="back" value="${_esc(back)}">
-              <button type="submit" class="btn btn-ghost btn-sm" title="Gruppen in Zwischenablage kopieren">📋 Kopieren</button>
+              <button type="submit" class="btn btn-ghost btn-sm" title="Gruppen in Zwischenablage kopieren"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-.15em"><rect x="5" y="1" width="6" height="3" rx="1"/><rect x="2" y="3" width="12" height="12" rx="1.5"/><line x1="5" y1="7" x2="11" y2="7" stroke-linecap="round"/><line x1="5" y1="10" x2="9" y2="10" stroke-linecap="round"/></svg> Kopieren</button>
             </form>''' : ''}
           </div>
         </div>
@@ -1795,7 +1912,7 @@ String renderUserDetail(String username, Map<String, dynamic> u, String back,
             ? '<div style="font:400 .72rem var(--mono);color:var(--gray-400);">Zuletzt bearbeitet: ${_esc(note['updatedAt'] as String? ?? '')} von ${_esc(note['updatedBy'] as String? ?? '')}</div>'
             : ''}
           <div>
-            <button type="submit" class="btn btn-ghost btn-sm">💾 Notiz speichern</button>
+            <button type="submit" class="btn btn-ghost btn-sm">Notiz speichern</button>
           </div>
         </form>
       </div>
@@ -1808,7 +1925,7 @@ String renderUserDetail(String username, Map<String, dynamic> u, String back,
 // ── Group Picker ──────────────────────────────────────────────────────────────
 
 String renderGroupPicker(String username, String userDn, String back,
-    List<Map<String, dynamic>> groups, String action) {
+    List<Map<String, dynamic>> groups, String action, String csrfToken) {
   final items = groups.map((g) {
     final cn = _esc(g['cn'] ?? '–');
     final gdn = _esc(g['dn'] ?? '');
@@ -1819,6 +1936,7 @@ String renderGroupPicker(String username, String userDn, String back,
         <div style="font-size:.72rem;color:var(--gray-400);">$gdn</div>
       </div>
       <form method="post" action="/group/add/confirm">
+        <input type="hidden" name="_csrf" value="${_esc(csrfToken)}">
         <input type="hidden" name="user_dn" value="${_esc(userDn)}">
         <input type="hidden" name="group_dn" value="${_esc(g['dn'] ?? '')}">
         <input type="hidden" name="back" value="${_esc(back)}">
@@ -1831,7 +1949,7 @@ String renderGroupPicker(String username, String userDn, String back,
     <div class="card card-pad">
       <p style="margin-bottom:1rem;font-weight:600;">Welche Gruppe?</p>
       <div class="picker-list">$items</div>
-      <a href="javascript:history.back()" class="btn btn-ghost" style="margin-top:1rem;">← Zurück</a>
+      <a href="/user?dn=${Uri.encodeComponent(userDn)}&q=${Uri.encodeComponent(back)}" class="btn btn-ghost" style="margin-top:1rem;">← Zurück</a>
     </div>
   ''', active: 'search');
 }
@@ -1851,10 +1969,10 @@ String renderGroups(String username, String query, List<Map<String, dynamic>> gr
       <td>$count</td>
       <td style="white-space:nowrap;">
         <a href="/groups/members?dn=${Uri.encodeComponent(gdn)}&name=${Uri.encodeComponent(g['cn'] ?? '')}" class="btn btn-ghost btn-sm">Mitglieder</a>
-        <a href="/export/group?dn=${Uri.encodeComponent(gdn)}&name=${Uri.encodeComponent(g['cn'] ?? '')}" class="btn btn-ghost btn-sm">⬇ CSV</a>
+        <a href="/export/group?dn=${Uri.encodeComponent(gdn)}&name=${Uri.encodeComponent(g['cn'] ?? '')}" class="btn btn-ghost btn-sm"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" style="vertical-align:-.15em"><path d="M8 2v8M5 8l3 3 3-3" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 13h10" stroke-linecap="round"/></svg> CSV</a>
         <form method="post" action="/group/delete" style="display:inline;margin:0">
           <input type="hidden" name="group_dn" value="${_esc(gdn)}">
-          <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Gruppe wirklich löschen?')">🗑 Löschen</button>
+          <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Gruppe wirklich löschen?')"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-.15em"><polyline points="2,4 14,4"/><path d="M5 4V2.5h6V4M6 7v5M10 7v5" stroke-linecap="round"/><rect x="3" y="4" width="10" height="10" rx="1.5"/></svg> Löschen</button>
         </form>
       </td>
     </tr>''';
@@ -1894,7 +2012,7 @@ String renderGroups(String username, String query, List<Map<String, dynamic>> gr
     <div class="card card-pad" style="margin-bottom:1rem;">
       <p style="font-weight:600;margin-bottom:.75rem;color:var(--gray-600);">Gruppen suchen</p>
       <form class="search-box" action="/groups" method="get">
-        <input type="text" name="q" value="${_esc(query)}" placeholder="Gruppenname..." autofocus>
+        <input type="text" name="q" value="${_esc(query)}" placeholder="Gruppenname..." autofocus maxlength="100">
         <button type="submit" class="btn btn-primary">Suchen</button>
       </form>
     </div>
@@ -1925,7 +2043,7 @@ String renderGroupMembers(String username, String groupName, String groupDn,
       <a href="/groups" class="btn btn-ghost btn-sm">← Gruppen</a>
       <h2 style="font-size:1rem;font-weight:600;">${_esc(groupName)}</h2>
       <a href="/export/group?dn=${Uri.encodeComponent(groupDn)}&name=${Uri.encodeComponent(groupName)}"
-         class="btn btn-ghost btn-sm" style="margin-left:auto;">⬇ CSV Export</a>
+         class="btn btn-ghost btn-sm" style="margin-left:auto;"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" style="vertical-align:-.15em"><path d="M8 2v8M5 8l3 3 3-3" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 13h10" stroke-linecap="round"/></svg> CSV Export</a>
     </div>
     ${members.isEmpty ? '<div class="alert alert-error">Keine Mitglieder gefunden.</div>' : '''
     <div class="card">
@@ -2111,7 +2229,7 @@ String renderOuUsers(String username, String ouDn, List<Map<String, dynamic>> us
       <h2 style="font-size:1rem;font-weight:600;">$ouName</h2>
       <span style="font-size:.78rem;color:var(--gray-400);word-break:break-all;">${_esc(ouDn)}</span>
       <a href="$toggleUrl" class="btn btn-ghost btn-sm" style="margin-left:auto;">
-        ${subtree ? '📂 Nur direkte User' : '📁 Alle Sub-OUs einschliessen'}
+        ${subtree ? '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-.15em"><rect x="1" y="5" width="14" height="9" rx="1.5"/><path d="M1 8h14M1 7V4.5l3-1.5h3l2 1.5" stroke-linecap="round"/></svg> Nur direkte User' : '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-.15em"><rect x="1" y="5" width="14" height="9" rx="1.5"/><path d="M1 8h14M1 7V4.5l3-1.5h3l2 1.5M10 10l2 2-2 2" stroke-linecap="round" stroke-linejoin="round"/></svg> Alle Sub-OUs einschliessen'}
       </a>
     </div>
     ${users.isEmpty
@@ -2206,7 +2324,8 @@ String renderSettings(String username, Map<String, bool> settings, {String? msg}
       <h1 style="font:700 16px var(--sans);color:var(--gray-800);">Einstellungen</h1>
     </div>
 
-    ${msg == 'testmail' ? '<div class="alert alert-success" style="margin-bottom:1.25rem;">✓ Testmail wurde gesendet an support.it@somedia.ch.</div>' : ''}
+    ${msg == 'testmail-ok' ? '<div class="alert alert-success" style="margin-bottom:1.25rem;">✓ Testmail wurde gesendet.</div>' : ''}
+    ${msg == 'testmail-err' ? '<div class="alert alert-error" style="margin-bottom:1.25rem;">✗ Testmail konnte nicht gesendet werden. Bitte SMTP-Einstellungen prüfen (Konsole für Details).</div>' : ''}
 
     <div class="card" style="margin-bottom:1.25rem;">
       <div style="padding:1rem 1.5rem;border-bottom:1px solid var(--gray-100);">
@@ -2345,7 +2464,7 @@ String renderSettings(String username, Map<String, bool> settings, {String? msg}
         ${toggle('readonly_self', readOnlySelf,
             'Nur-Lesen für eigenen Account',
             'Verhindert versehentliche Änderungen an deinem eigenen AD-Account. Bearbeiten, Passwort-Reset und Account-Aktionen sind dann gesperrt, wenn du deinen eigenen User öffnest.',
-            '🔒')}
+            '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="7" width="8" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" stroke-linecap="round"/></svg>')}
       </div>
     </div>
 
@@ -2388,7 +2507,7 @@ String renderCloneForm(String username, Map<String, dynamic> u, String back) {
 
   return _layout(username, 'User kopieren', '''
     <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1rem;">
-      <a href="/user?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}" class="btn btn-ghost btn-sm">← Zurück</a>
+      <a href="javascript:history.back()" class="btn btn-ghost btn-sm">← Zurück</a>
       <h2 style="font-size:1rem;font-weight:600;">Neuen User basierend auf Vorlage erstellen</h2>
     </div>
     <div class="card card-pad" style="margin-bottom:1rem;background:var(--blue-lt);border:1px solid #93c5fd;">
@@ -2436,7 +2555,7 @@ String renderCloneForm(String username, Map<String, dynamic> u, String back) {
           <label for="must-change" style="font-size:.88rem;">Passwort bei erster Anmeldung ändern erzwingen</label>
         </div>
         <div style="margin-top:1.25rem;display:flex;gap:.75rem;">
-          <button type="submit" class="btn btn-primary">👤 User erstellen</button>
+          <button type="submit" class="btn btn-primary"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-.15em"><circle cx="8" cy="6" r="3"/><path d="M2 14a6 6 0 0 1 12 0" stroke-linecap="round"/></svg> User erstellen</button>
           <a href="/user?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}" class="btn btn-ghost">Abbrechen</a>
         </div>
       </form>
@@ -2446,7 +2565,7 @@ String renderCloneForm(String username, Map<String, dynamic> u, String back) {
 
 // ── User verschieben ─────────────────────────────────────────────────────────
 
-String renderMoveForm(String username, Map<String, dynamic> u, List<Map<String, dynamic>> ous, String back) {
+String renderMoveForm(String username, Map<String, dynamic> u, List<Map<String, dynamic>> ous, String baseDn, String back) {
   final dn = u['dn'] as String? ?? '';
   final cn = _esc(u['cn'] as String? ?? '');
   final sam = _esc(u['sAMAccountName'] as String? ?? '');
@@ -2479,20 +2598,30 @@ String renderMoveForm(String username, Map<String, dynamic> u, List<Map<String, 
     </div>
   ''' : '';
 
-  final ouOptions = ous
-      .toList()
-      ..sort((a, b) => (a['ou'] ?? a['dn'] ?? '').compareTo(b['ou'] ?? b['dn'] ?? ''));
-  final ouOptHtml = ouOptions.map((o) {
-    final label = _esc(o['ou'] as String? ?? o['dn'] as String? ?? '');
-    final val = _esc(o['dn'] as String? ?? '');
-    final selected = val == _esc(currentOu) ? ' selected' : '';
-    return '<option value="$val"$selected>$label</option>';
-  }).join('\n');
+  // Build OU data for JS tree
+  final ousData = ous.map((o) => {
+    'dn': o['dn'] as String? ?? '',
+    'ou': o['ou'] as String? ?? o['dn'] as String? ?? '',
+    'desc': o['description'] as String? ?? '',
+  }).toList();
+  final ousJson = jsonEncode(ousData);
+  final currentOuJson = jsonEncode(currentOu);
 
   final pageTitle = isComputer ? 'Computer verschieben' : 'Benutzer in andere OU verschieben';
   final objectLabel = isComputer ? 'Computer' : 'Benutzer';
 
   return _layout(username, isComputer ? 'Computer verschieben' : 'User verschieben', '''
+    <style>
+      .ou-tree-wrap { border:1.5px solid var(--gray-200); border-radius:8px; max-height:400px; overflow-y:auto; padding:.4rem; background:var(--gray-50,#f9fafb); }
+      .ou-node { display:flex; align-items:center; gap:.3rem; padding:.3rem .5rem; border-radius:6px; cursor:pointer; transition:background .1s; user-select:none; }
+      .ou-node:hover { background:var(--gray-100,#f1f5f9); }
+      .ou-node.ou-selected { background:#dbeafe; color:#1d4ed8; }
+      [data-theme="dark"] .ou-node.ou-selected { background:#1e3a5f; color:#93c5fd; }
+      .ou-tog { display:inline-flex; align-items:center; justify-content:center; width:1.2rem; flex-shrink:0; font-size:.8rem; color:var(--gray-400); }
+      .ou-children { padding-left:1.2rem; }
+      .ou-label { font:500 .88rem var(--sans); }
+      .ou-dn-label { font:.72rem var(--mono); color:var(--gray-400); margin-left:.4rem; }
+    </style>
     <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1rem;">
       <a href="/user?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}" class="btn btn-ghost btn-sm">← Zurück</a>
       <h2 style="font-size:1rem;font-weight:600;">$pageTitle</h2>
@@ -2506,19 +2635,124 @@ String renderMoveForm(String username, Map<String, dynamic> u, List<Map<String, 
       <form method="post" action="/user/move">
         <input type="hidden" name="dn" value="${_esc(dn)}">
         <input type="hidden" name="back" value="${_esc(back)}">
-        <div style="margin-bottom:1rem;">
+        <input type="hidden" name="target_ou" id="ou-value">
+        <div style="margin-bottom:.6rem;">
           <label style="display:block;font:600 .8rem var(--sans);color:var(--gray-600);margin-bottom:.4rem;">Ziel-OU auswählen *</label>
-          <select name="target_ou" required style="width:100%;padding:.55rem .85rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.95rem;background:white;">
-            <option value="">OU wählen...</option>
-            $ouOptHtml
-          </select>
+          <div id="ou-display" style="min-height:2.2rem;padding:.45rem .7rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.88rem;background:var(--gray-50,#f9fafb);color:var(--gray-400);margin-bottom:.5rem;">Bitte OU unten auswählen…</div>
+          <input id="ou-filter" type="text" placeholder="OU filtern…" autocomplete="off"
+            style="width:100%;padding:.45rem .75rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.88rem;margin-bottom:.4rem;box-sizing:border-box;">
+          <div class="ou-tree-wrap">
+            <div id="ou-tree"></div>
+          </div>
         </div>
-        <div style="display:flex;gap:.75rem;">
-          <button type="submit" class="btn btn-primary">📦 Verschieben</button>
+        <div style="display:flex;gap:.75rem;margin-top:.75rem;">
+          <button type="submit" id="move-btn" class="btn btn-primary" disabled>Verschieben</button>
           <a href="/user?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}" class="btn btn-ghost">Abbrechen</a>
         </div>
       </form>
     </div>
+    <script>
+    (function() {
+      const OUS = $ousJson;
+      const CURRENT_OU = $currentOuJson;
+
+      const byDn = {};
+      OUS.forEach((o, i) => { o.idx = i; o.children = []; byDn[o.dn] = o; });
+      const roots = [];
+      OUS.forEach(o => {
+        const comma = o.dn.indexOf(',');
+        if (comma < 0) { roots.push(o); return; }
+        const parentDn = o.dn.substring(comma + 1);
+        const parent = byDn[parentDn];
+        if (parent) parent.children.push(o);
+        else roots.push(o);
+      });
+
+      function sortR(arr) {
+        arr.sort((a, b) => a.ou.localeCompare(b.ou, undefined, {sensitivity:'base'}));
+        arr.forEach(n => sortR(n.children));
+      }
+      sortR(roots);
+
+      const expanded = new Set();
+      function markPath(node) {
+        if (node.dn === CURRENT_OU) return true;
+        for (const c of node.children) {
+          if (markPath(c)) { expanded.add(node.idx); return true; }
+        }
+        return false;
+      }
+      roots.forEach(markPath);
+
+      let selIdx = -1;
+
+      function esc(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+
+      function renderNode(o) {
+        const hasC = o.children.length > 0;
+        const isExp = expanded.has(o.idx);
+        const isCur = o.dn === CURRENT_OU;
+        return '<div>'
+          + '<div class="ou-node' + (isCur ? ' ou-selected' : '') + '" id="on-' + o.idx + '" onclick="ouSel(' + o.idx + ')">'
+          + '<span class="ou-tog"' + (hasC ? ' onclick="event.stopPropagation();ouTog(' + o.idx + ')" data-idx="' + o.idx + '"' : '') + '>'
+          + (hasC ? (isExp ? '▾' : '▸') : '') + '</span>'
+          + '<span class="ou-label">' + esc(o.ou) + '</span>'
+          + '</div>'
+          + (hasC ? '<div id="oc-' + o.idx + '" class="ou-children" style="' + (isExp ? '' : 'display:none') + '">' + o.children.map(renderNode).join('') + '</div>' : '')
+          + '</div>';
+      }
+
+      function renderTree() {
+        document.getElementById('ou-tree').innerHTML = roots.map(renderNode).join('');
+        if (selIdx >= 0) {
+          const el = document.getElementById('on-' + selIdx);
+          if (el) el.classList.add('ou-selected');
+        }
+        if (CURRENT_OU) {
+          const cur = OUS.find(o => o.dn === CURRENT_OU);
+          if (cur) ouSel(cur.idx);
+        }
+      }
+
+      window.ouTog = function(idx) {
+        const el = document.getElementById('oc-' + idx);
+        if (!el) return;
+        const show = el.style.display === 'none';
+        el.style.display = show ? '' : 'none';
+        const btn = document.querySelector('.ou-tog[data-idx="' + idx + '"]');
+        if (btn) btn.textContent = show ? '▾' : '▸';
+      };
+
+      window.ouSel = function(idx) {
+        document.querySelectorAll('.ou-node.ou-selected').forEach(n => n.classList.remove('ou-selected'));
+        const o = OUS[idx];
+        selIdx = idx;
+        const el = document.getElementById('on-' + idx);
+        if (el) { el.classList.add('ou-selected'); el.scrollIntoView({block:'nearest'}); }
+        document.getElementById('ou-value').value = o.dn;
+        document.getElementById('ou-display').innerHTML =
+          '<strong>' + esc(o.ou) + '</strong> <span class="ou-dn-label">' + esc(o.dn) + '</span>';
+        document.getElementById('move-btn').disabled = false;
+      };
+
+      document.getElementById('ou-filter').addEventListener('input', function() {
+        const q = this.value.toLowerCase().trim();
+        if (!q) { renderTree(); return; }
+        const matches = OUS.filter(o => o.ou.toLowerCase().includes(q) || o.dn.toLowerCase().includes(q));
+        document.getElementById('ou-tree').innerHTML = matches.map(o =>
+          '<div class="ou-node' + (selIdx === o.idx ? ' ou-selected' : '') + '" id="on-' + o.idx + '" onclick="ouSel(' + o.idx + ')">'
+          + '<span class="ou-tog"></span>'
+          + '<span class="ou-label">' + esc(o.ou) + '</span>'
+          + '<span class="ou-dn-label">' + esc(o.dn) + '</span>'
+          + '</div>'
+        ).join('');
+      });
+
+      renderTree();
+    })();
+    </script>
   ''', active: 'search');
 }
 
@@ -2559,7 +2793,7 @@ String _pwdStatusBox(String? pwdLastSetStr, int uac, int maxPwdAgeDays) {
     badgeColor = '#dc2626'; badgeText = 'Muss geändert werden'; icon = '⚠';
     detail = 'Das Passwort muss bei der nächsten Anmeldung geändert werden.';
   } else if (neverExpires) {
-    badgeColor = '#2563eb'; badgeText = 'Läuft nie ab'; icon = '🔵';
+    badgeColor = '#2563eb'; badgeText = 'Läuft nie ab'; icon = '∞';
     final setStr = ft > 0 ? _formatFileTime(pwdLastSetStr) : '–';
     detail = 'Gesetzt am: <strong>$setStr</strong>';
   } else {
@@ -2573,7 +2807,7 @@ String _pwdStatusBox(String? pwdLastSetStr, int uac, int maxPwdAgeDays) {
       badgeColor = '#dc2626'; badgeText = 'Abgelaufen'; icon = '⚠';
       detail = 'Gesetzt am: <strong>$setStr</strong> · Abgelaufen seit <strong>${-daysLeft} Tagen</strong> ($expiryStr)';
     } else if (daysLeft <= 14) {
-      badgeColor = '#d97706'; badgeText = 'Läuft bald ab'; icon = '⏰';
+      badgeColor = '#d97706'; badgeText = 'Läuft bald ab'; icon = '⚠';
       detail = 'Gesetzt am: <strong>$setStr</strong> · Läuft ab in <strong>$daysLeft Tagen</strong> ($expiryStr)';
     } else {
       badgeColor = '#16a34a'; badgeText = 'Gültig'; icon = '✓';
@@ -2591,12 +2825,12 @@ String _pwdStatusBox(String? pwdLastSetStr, int uac, int maxPwdAgeDays) {
 // ── Feedback ──────────────────────────────────────────────────────────────────
 
 String renderSuccess(String username, String msg) => _layout(username, 'Erfolg', '''
-  <div class="alert alert-success">✓ $msg</div>
+  <div class="alert alert-success">✓ ${_esc(msg)}</div>
   <a href="javascript:history.back()" class="btn btn-ghost">← Zurück</a>
 ''');
 
 String renderError(String username, String msg) => _layout(username, 'Fehler', '''
-  <div class="alert alert-error">✗ $msg</div>
+  <div class="alert alert-error">✗ ${_esc(msg)}</div>
   <a href="/" class="btn btn-ghost">← Zur Suche</a>
 ''');
 
@@ -2633,113 +2867,9 @@ String _extractOu(String dn) {
 String _esc(String s) => s
     .replaceAll('&', '&amp;')
     .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;');
-
-// ── Hausplan ──────────────────────────────────────────────────────────────────
-
-// Abteilung → (Bild, Marker-X%, Marker-Y%)
-const _deptMarkers = <String, (String, double, double)>{
-  'IT-Services':           ('attika.png', 26.0, 68.0),
-  'Kundenservice':         ('2og.png',   50.0, 72.0),
-  'Somedia Distribution':  ('1og.png',   94.0, 45.0),
-  'SO Online Zeitung':     ('1og.png',   24.0, 45.0),
-  'Zeitung Produktion':    ('1og.png',   38.0, 45.0),
-  'Digital & KI':          ('1og.png',   50.0, 28.0),
-  'SO Audio Video':        ('1og.png',   80.0, 45.0),
-  'TV':                    ('2og.png',   18.0, 45.0),
-  'Creation':              ('2og.png',   92.0, 30.0),
-};
-
-// Büro-Code → Bild (Fallback wenn keine Abteilung bekannt)
-String? _floorImg(String office) {
-  final up = office.toUpperCase();
-  if (up.startsWith('AT')) return 'attika.png';
-  if (up.startsWith('2.OG') || up.startsWith('2OG')) return '2og.png';
-  if (up.startsWith('1.OG') || up.startsWith('1OG')) return '1og.png';
-  return null;
-}
-
-String _floorplanBlock(String office, String dept) {
-  if (office.isEmpty) return '';
-  final deptEntry = _deptMarkers[dept];
-  String? img;
-  double? mx, my;
-  if (deptEntry != null) {
-    img = deptEntry.$1; mx = deptEntry.$2; my = deptEntry.$3;
-  } else {
-    img = _floorImg(office);
-  }
-  if (img == null) return '';
-
-  final marker = (mx != null && my != null) ? '''
-    <div style="position:absolute;left:${mx}%;top:${my}%;transform:translate(-50%,-50%);pointer-events:none;z-index:2;">
-      <div style="width:18px;height:18px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 2px #2563eb,0 2px 8px rgba(37,99,235,.5);"></div>
-    </div>''' : '';
-
-  return '''
-  <div class="field-item" style="grid-column:1/-1;">
-    <div class="field-label">Standort – ${_esc(office)}</div>
-    <div style="position:relative;width:100%;margin-top:.5rem;border-radius:8px;overflow:hidden;border:1px solid var(--gray-200);background:#f8f9fa;">
-      <img src="/floorplan/$img" style="width:100%;display:block;">
-      $marker
-    </div>
-  </div>''';
-}
-
-String renderFloorplanPreview(String username) {
-  final colors = ['#2563eb','#dc2626','#16a34a','#d97706','#7c3aed','#0891b2','#db2777','#65a30d'];
-  int colorIdx = 0;
-
-  String planSection(String title, String imgFile) {
-    final depts = _deptMarkers.entries.where((e) => e.value.$1 == imgFile).toList();
-    final startIdx = colorIdx;
-    final markers = StringBuffer();
-    for (var i = 0; i < depts.length; i++) {
-      final e = depts[i];
-      final color = colors[(startIdx + i) % colors.length];
-      markers.write('<div style="position:absolute;left:${e.value.$2}%;top:${e.value.$3}%;transform:translate(-50%,-50%);z-index:2;">'
-          '<div style="width:16px;height:16px;border-radius:50%;background:$color;border:2px solid #fff;box-shadow:0 0 0 1.5px $color,0 2px 6px rgba(0,0,0,.3);"></div>'
-          '<div style="position:absolute;top:18px;left:50%;transform:translateX(-50%);white-space:nowrap;font:600 10px sans-serif;color:$color;background:rgba(255,255,255,.9);padding:1px 4px;border-radius:3px;border:1px solid $color;">${_esc(e.key)}</div>'
-          '</div>');
-    }
-    colorIdx += depts.length;
-
-    final legend = StringBuffer();
-    for (var i = 0; i < depts.length; i++) {
-      final e = depts[i];
-      final color = colors[(startIdx + i) % colors.length];
-      legend.write('<div style="display:flex;align-items:center;gap:.4rem;font:400 .78rem sans-serif;">'
-          '<span style="width:10px;height:10px;border-radius:50%;background:$color;flex-shrink:0;"></span>'
-          '${_esc(e.key)}</div>');
-    }
-
-    return '''
-    <div class="card" style="margin-bottom:1.5rem;">
-      <div style="padding:.75rem 1.25rem;border-bottom:1px solid var(--gray-100);font:700 .85rem var(--sans);color:var(--gray-700);">$title</div>
-      <div style="padding:1rem 1.25rem;">
-        <div style="position:relative;width:100%;border-radius:6px;overflow:hidden;border:1px solid var(--gray-200);background:#f8f9fa;margin-bottom:.75rem;">
-          <img src="/floorplan/$imgFile" style="width:100%;display:block;">
-          ${markers.toString()}
-        </div>
-        ${depts.isEmpty ? '<em style="color:var(--gray-400);font-size:.8rem;">Keine Abteilungen zugewiesen</em>' : '<div style="display:flex;flex-wrap:wrap;gap:.5rem .75rem;">${legend.toString()}</div>'}
-      </div>
-    </div>''';
-  }
-
-  return _layout(username, 'Hausplan Vorschau', '''
-    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;">
-      <a href="/" class="btn btn-ghost btn-sm">← Zurück</a>
-      <h1 style="font:700 16px var(--sans);color:var(--gray-800);">Hausplan – Abteilungs-Übersicht</h1>
-    </div>
-    <div class="alert" style="margin-bottom:1.25rem;background:var(--blue-lt);border:1px solid #93c5fd;color:var(--blue);">
-      Vorschau aller Abteilungs-Marker. Stimmt etwas nicht? Sag mir welcher Punkt wohin soll.
-    </div>
-    ${planSection('Attika', 'attika.png')}
-    ${planSection('2. Obergeschoss', '2og.png')}
-    ${planSection('1. Obergeschoss', '1og.png')}
-  ''', active: '');
-}
 
 // ── Feature: Inaktive User ────────────────────────────────────────────────────
 
@@ -2758,7 +2888,7 @@ String renderInactiveUsers(String username, List<Map<String, dynamic>> users) {
 
   return _layout(username, 'Inaktive Benutzer', '''
     <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-      <a href="/" class="btn btn-ghost btn-sm">← Zurück</a>
+      <a href="javascript:history.back()" class="btn btn-ghost btn-sm">← Zurück</a>
       <div>
         <h2 style="font-size:1rem;font-weight:600;">Inaktive Benutzer</h2>
         <p style="font-size:.78rem;color:var(--gray-400);">Letzter Login vor mehr als 90 Tagen (aktive Accounts)</p>
@@ -2797,7 +2927,7 @@ String renderServiceAccounts(String username, List<Map<String, dynamic>> users) 
 
   return _layout(username, 'Service-Accounts', '''
     <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-      <a href="/" class="btn btn-ghost btn-sm">← Zurück</a>
+      <a href="javascript:history.back()" class="btn btn-ghost btn-sm">← Zurück</a>
       <div>
         <h2 style="font-size:1rem;font-weight:600;">Service-Accounts</h2>
         <p style="font-size:.78rem;color:var(--gray-400);">Benutzer mit "Passwort läuft nie ab" (UAC Bit 65536)</p>
@@ -2839,24 +2969,44 @@ String renderUsersNoEmail(String username, List<Map<String, dynamic>> users) {
 
   return _layout(username, 'Ohne E-Mail', '''
     <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-      <a href="/" class="btn btn-ghost btn-sm">← Zurück</a>
+      <a href="javascript:history.back()" class="btn btn-ghost btn-sm">← Zurück</a>
       <div>
         <h2 style="font-size:1rem;font-weight:600;">Benutzer ohne E-Mail-Adresse</h2>
         <p style="font-size:.78rem;color:var(--gray-400);">Accounts ohne gesetztes mail-Attribut</p>
       </div>
     </div>
+    ${users.isEmpty ? '<div class="card card-pad"><em style="color:var(--gray-400);">Alle Benutzer haben eine E-Mail-Adresse.</em></div>' : '''
+    <div class="card card-pad" style="padding-bottom:.5rem;">
+      <input type="text" id="noemail-filter" placeholder="Name, Benutzername oder Abteilung filtern…" autocomplete="off"
+        style="width:100%;padding:.5rem .8rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.875rem;box-sizing:border-box;"
+        oninput="noEmailFilter()">
+    </div>
     <div class="card">
-      ${users.isEmpty
-        ? '<div class="card-pad"><em style="color:var(--gray-400);">Alle Benutzer haben eine E-Mail-Adresse.</em></div>'
-        : '''
-        <div class="card-pad" style="padding-bottom:.5rem;">
-          <span style="font:500 .82rem var(--sans);color:var(--gray-500);">${users.length} Benutzer</span>
-        </div>
-        <table class="result-table">
+      <div class="card-pad" style="padding-bottom:.5rem;">
+        <span id="noemail-count" style="font:500 .82rem var(--sans);color:var(--gray-500);">${users.length} Benutzer</span>
+      </div>
+      <div class="table-wrap">
+        <table class="result-table" id="noemail-table">
           <thead><tr><th>Name</th><th>Benutzername</th><th>Abteilung</th><th>Status</th><th></th></tr></thead>
           <tbody>$rows</tbody>
-        </table>'''}
+        </table>
+      </div>
     </div>
+    <script>
+    function noEmailFilter() {
+      var q = document.getElementById('noemail-filter').value.toLowerCase();
+      var rows = document.getElementById('noemail-table').tBodies[0].rows;
+      var shown = 0;
+      for (var i = 0; i < rows.length; i++) {
+        var text = rows[i].textContent.toLowerCase();
+        var match = !q || text.includes(q);
+        rows[i].style.display = match ? '' : 'none';
+        if (match) shown++;
+      }
+      document.getElementById('noemail-count').textContent = shown + ' Benutzer';
+    }
+    </script>
+    '''}
   ''', active: 'noemail');
 }
 
@@ -2882,7 +3032,7 @@ String renderPasswordPolicy(String username, Map<String, String> policy) {
   String row(String label, String value, {String? icon}) => '''
     <div style="display:flex;align-items:center;justify-content:space-between;padding:.8rem 0;border-bottom:1px solid var(--gray-100);">
       <div style="display:flex;align-items:center;gap:.6rem;">
-        ${icon != null ? '<span style="font-size:1.1rem;">$icon</span>' : '<span style="width:1.6rem;display:inline-block;"></span>'}
+        ${icon != null ? '<span style="display:flex;align-items:center;color:var(--gray-500);">$icon</span>' : '<span style="width:1.4rem;display:inline-block;"></span>'}
         <span style="font:500 .9rem var(--sans);color:var(--gray-700);">$label</span>
       </div>
       <span style="font:700 .9rem var(--mono);color:var(--gray-800);">$value</span>
@@ -2890,23 +3040,23 @@ String renderPasswordPolicy(String username, Map<String, String> policy) {
 
   return _layout(username, 'Passwort-Policy', '''
     <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-      <a href="/" class="btn btn-ghost btn-sm">← Zurück</a>
+      <a href="javascript:history.back()" class="btn btn-ghost btn-sm">← Zurück</a>
       <h2 style="font-size:1rem;font-weight:600;">Domain Passwort-Policy</h2>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
       <div class="card card-pad">
         <div class="card-section-title">Passwort-Einstellungen</div>
-        ${row('Mindestlänge', minLen, icon: '🔢')}
-        ${row('Passwort-Verlauf', '$histLen Passwörter', icon: '📋')}
-        ${row('Max. Gültigkeit', maxPwdAgeDays > 0 ? '$maxPwdAgeDays Tage' : 'Unbegrenzt', icon: '📅')}
-        ${row('Min. Gültigkeit', minPwdAgeDays > 0 ? '$minPwdAgeDays Tage' : 'Keine', icon: '⏱')}
-        ${row('Komplexitätsanforderung', complexity, icon: '🔐')}
+        ${row('Mindestlänge', minLen, icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="4" width="14" height="8" rx="1.5"/><path d="M4 8h2M7 6v4M10 6l2 2-2 2" stroke-linecap="round" stroke-linejoin="round"/></svg>')}
+        ${row('Passwort-Verlauf', '$histLen Passwörter', icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="1" width="6" height="3" rx="1"/><rect x="2" y="3" width="12" height="12" rx="1.5"/><line x1="5" y1="7" x2="11" y2="7" stroke-linecap="round"/><line x1="5" y1="10" x2="9" y2="10" stroke-linecap="round"/></svg>')}
+        ${row('Max. Gültigkeit', maxPwdAgeDays > 0 ? '$maxPwdAgeDays Tage' : 'Unbegrenzt', icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="12" height="12" rx="1.5"/><path d="M11 1v4M5 1v4M2 7h12" stroke-linecap="round"/></svg>')}
+        ${row('Min. Gültigkeit', minPwdAgeDays > 0 ? '$minPwdAgeDays Tage' : 'Keine', icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="9" r="5"/><path d="M8 6v3l2 1" stroke-linecap="round"/><path d="M6 1h4" stroke-linecap="round"/></svg>')}
+        ${row('Komplexitätsanforderung', complexity, icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="7" width="8" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" stroke-linecap="round"/><circle cx="8" cy="10.5" r="1" fill="currentColor" stroke="none"/></svg>')}
       </div>
       <div class="card card-pad">
         <div class="card-section-title">Kontosperrung</div>
-        ${row('Schwellwert (Fehlversuche)', lockoutThreshold == '0' ? 'Deaktiviert' : lockoutThreshold, icon: '🚫')}
-        ${row('Sperrdauer', lockoutDurMins > 0 ? '$lockoutDurMins Minuten' : 'Manuell aufheben', icon: '⏳')}
-        ${row('Beobachtungsfenster', observeWinMins > 0 ? '$observeWinMins Minuten' : '–', icon: '🔭')}
+        ${row('Schwellwert (Fehlversuche)', lockoutThreshold == '0' ? 'Deaktiviert' : lockoutThreshold, icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6"/><line x1="4" y1="8" x2="12" y2="8" stroke-linecap="round"/></svg>')}
+        ${row('Sperrdauer', lockoutDurMins > 0 ? '$lockoutDurMins Minuten' : 'Manuell aufheben', icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 1.5" stroke-linecap="round"/></svg>')}
+        ${row('Beobachtungsfenster', observeWinMins > 0 ? '$observeWinMins Minuten' : '–', icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="3"/><path d="M1.5 8a6.5 6.5 0 0 0 13 0 6.5 6.5 0 0 0-13 0z"/></svg>')}
       </div>
     </div>
     ${policy.isEmpty ? '<div class="alert alert-error">Keine Policy-Daten geladen. Prüfe LDAP-Verbindung.</div>' : ''}
@@ -2920,7 +3070,7 @@ String renderUserCompareForm(String username, Map<String, dynamic> userA) {
   final cnA = _esc(userA['cn'] ?? '–');
   return _layout(username, 'User vergleichen', '''
     <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-      <a href="/user?dn=${Uri.encodeComponent(userA['dn'] ?? '')}" class="btn btn-ghost btn-sm">← Zurück</a>
+      <a href="javascript:history.back()" class="btn btn-ghost btn-sm">← Zurück</a>
       <h2 style="font-size:1rem;font-weight:600;">User vergleichen</h2>
     </div>
     <div class="card card-pad">
@@ -2934,7 +3084,7 @@ String renderUserCompareForm(String username, Map<String, dynamic> userA) {
           <input type="text" name="b" required placeholder="z.B. mb0223 oder Max Muster" autofocus
                  style="width:100%;padding:.55rem .85rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.9rem;">
         </div>
-        <button type="submit" class="btn btn-primary">⚖ Vergleichen</button>
+        <button type="submit" class="btn btn-primary">Vergleichen</button>
       </form>
     </div>
   ''', active: 'search');
@@ -3010,7 +3160,7 @@ String renderUserCompare(String username, Map<String, dynamic> userA, Map<String
 
   return _layout(username, 'Vergleich: $cnA vs $cnB', '''
     <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-      <a href="/user?dn=${Uri.encodeComponent(userA['dn'] ?? '')}" class="btn btn-ghost btn-sm">← Zurück</a>
+      <a href="javascript:history.back()" class="btn btn-ghost btn-sm">← Zurück</a>
       <h2 style="font-size:1rem;font-weight:600;">User-Vergleich</h2>
     </div>
     <div class="card" style="margin-bottom:1rem;">
@@ -3070,7 +3220,7 @@ String renderEffectiveGroups(String username, Map<String, dynamic>? user, String
 
   return _layout(username, 'Effektive Gruppen', '''
     <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-      <a href="/user?dn=${Uri.encodeComponent(dn)}" class="btn btn-ghost btn-sm">← Zurück</a>
+      <a href="javascript:history.back()" class="btn btn-ghost btn-sm">← Zurück</a>
       <div>
         <h2 style="font-size:1rem;font-weight:600;">Effektive Gruppen: $cn</h2>
         <p style="font-size:.78rem;color:var(--gray-400);">$sam · ${groups.length} Gruppen total (${direct.length} direkt, ${nested.length} verschachtelt)</p>
@@ -3126,7 +3276,7 @@ String renderComputers(String username, List<Map<String, dynamic>> computers) {
 
   return _layout(username, 'Computer', '''
     <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-      <a href="/" class="btn btn-ghost btn-sm">← Zurück</a>
+      <a href="javascript:history.back()" class="btn btn-ghost btn-sm">← Zurück</a>
       <div>
         <h2 style="font-size:1rem;font-weight:600;">Computer-Browser</h2>
         <p style="font-size:.78rem;color:var(--gray-400);">${computers.length} Computer im Verzeichnis</p>
@@ -3216,7 +3366,7 @@ String renderAdvancedSearch(String username, List<Map<String, dynamic>> ous,
 
   return _layout(username, 'Erweiterte Suche', '''
     <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-      <a href="/" class="btn btn-ghost btn-sm">← Zurück</a>
+      <a href="javascript:history.back()" class="btn btn-ghost btn-sm">← Zurück</a>
       <h2 style="font-size:1rem;font-weight:600;">Erweiterte Suche</h2>
     </div>
     <div class="card card-pad">
@@ -3260,7 +3410,7 @@ String renderAdvancedSearch(String username, List<Map<String, dynamic>> ous,
 
 String renderOrgChartForm(String username) => _layout(username, 'Org-Chart', '''
   <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-    <a href="/" class="btn btn-ghost btn-sm">← Zurück</a>
+    <a href="javascript:history.back()" class="btn btn-ghost btn-sm">← Zurück</a>
     <div>
       <h2 style="font-size:1rem;font-weight:600;">Org-Chart / Manager-Hierarchie</h2>
       <p style="font-size:.78rem;color:var(--gray-400);">Vorgesetzten-Kette und direkte Berichte anzeigen</p>
@@ -3316,7 +3466,7 @@ String renderOrgChart(String username, Map<String, dynamic> user,
   return _layout(username, 'Org-Chart: $cn', '''
     <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem;">
       <a href="/orgchart" class="btn btn-ghost btn-sm">← Org-Chart</a>
-      <a href="/user?dn=${Uri.encodeComponent(dn)}" class="btn btn-ghost btn-sm">👤 Profil</a>
+      <a href="/user?dn=${Uri.encodeComponent(dn)}" class="btn btn-ghost btn-sm">Profil</a>
       <div>
         <h2 style="font-size:1rem;font-weight:600;">Org-Chart: $cn</h2>
         <p style="font-size:.78rem;color:var(--gray-400);">${managers.length} Vorgesetzte · ${reports.length} direkte Berichte</p>
@@ -3372,8 +3522,8 @@ String renderDirectory(String username, List<Map<String, dynamic>> users) {
         '<td onclick="location.href=\'$detailUrl\'" style="cursor:pointer;"><div class="avatar-placeholder">$initial</div></td>'
         '<td onclick="location.href=\'$detailUrl\'" style="cursor:pointer;"><strong>${disabled ? '<s>' : ''}$cn${disabled ? '</s>' : ''}</strong><br><span style="font-size:.75rem;color:var(--gray-400);">$sam</span></td>'
         '<td onclick="location.href=\'$detailUrl\'" style="cursor:pointer;font-size:.9rem;">$dept</td>'
-        '<td style="font-size:.9rem;white-space:nowrap;">${phone.isNotEmpty ? '<a href="tel:$phone" style="color:inherit;text-decoration:none;">📞 $phone</a>' : '<em style="color:var(--gray-300);">–</em>'}</td>'
-        '<td style="font-size:.9rem;white-space:nowrap;">${mobile.isNotEmpty ? '<a href="tel:$mobile" style="color:inherit;text-decoration:none;">📱 $mobile</a>' : '<em style="color:var(--gray-300);">–</em>'}</td>'
+        '<td style="font-size:.9rem;white-space:nowrap;">${phone.isNotEmpty ? '<a href="tel:$phone" style="color:inherit;text-decoration:none;">$phone</a>' : '<em style="color:var(--gray-300);">–</em>'}</td>'
+        '<td style="font-size:.9rem;white-space:nowrap;">${mobile.isNotEmpty ? '<a href="tel:$mobile" style="color:inherit;text-decoration:none;">$mobile</a>' : '<em style="color:var(--gray-300);">–</em>'}</td>'
         '<td style="font-size:.9rem;">${mail.isNotEmpty ? '<a href="mailto:$mail" style="color:var(--blue);text-decoration:none;">$mail</a>' : '<em style="color:var(--gray-300);">–</em>'}</td>'
         '</tr>';
   }).join('\n');
@@ -3389,21 +3539,21 @@ String renderDirectory(String username, List<Map<String, dynamic>> users) {
     <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap;">
       <div style="flex:1;">
         <h2 style="font-size:1.05rem;font-weight:700;">Telefonliste</h2>
-        <p style="font-size:.82rem;color:var(--gray-400);margin-top:.15rem;">${users.length} Einträge · Telefon &amp; Mobil</p>
+        <p style="font-size:.82rem;color:var(--gray-400);margin-top:.15rem;">${users.length} Einträge · Telefon &amp; Smartphone</p>
       </div>
-      <a href="/export/directory" class="btn btn-ghost btn-sm">⬇ CSV exportieren</a>
+      <a href="/export/directory" class="btn btn-ghost btn-sm"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" style="vertical-align:-.15em"><path d="M8 2v8M5 8l3 3 3-3" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 13h10" stroke-linecap="round"/></svg> CSV exportieren</a>
     </div>
 
     <div class="card card-pad" style="margin-bottom:1rem;">
       <div class="dir-filter-wrap">
-        <div style="flex:2;min-width:200px;">
+        <div style="flex:1;min-width:200px;">
           <span class="filter-label">Name oder Abteilung</span>
           <input type="text" id="dir-filter-name"
                  placeholder="z.B. Müller oder IT-Abteilung"
                  oninput="dirFilter()">
         </div>
         <div style="flex:1;min-width:160px;">
-          <span class="filter-label">Telefon / Mobil (Teilnummer)</span>
+          <span class="filter-label">Telefon / Smartphone (Teilnummer)</span>
           <input type="text" id="dir-filter-phone"
                  placeholder="z.B. 1234 oder +41 79"
                  oninput="dirFilter()">
@@ -3420,7 +3570,7 @@ String renderDirectory(String username, List<Map<String, dynamic>> users) {
             <th>Name</th>
             <th>Abteilung</th>
             <th>Telefon</th>
-            <th>Mobil</th>
+            <th>Smartphone</th>
             <th>E-Mail</th>
           </tr></thead>
           <tbody>$rows</tbody>
@@ -3486,7 +3636,7 @@ String renderDeptStats(String username, List<MapEntry<String, int>> depts) {
 
   return _layout(username, 'Abteilungen', '''
     <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-      <a href="/" class="btn btn-ghost btn-sm">← Zurück</a>
+      <a href="javascript:history.back()" class="btn btn-ghost btn-sm">← Zurück</a>
       <div>
         <h2 style="font-size:1rem;font-weight:600;">Abteilungs-Statistik</h2>
         <p style="font-size:.78rem;color:var(--gray-400);">Aktive Benutzer nach Abteilung (Top ${depts.length})</p>
@@ -3529,7 +3679,7 @@ String renderExpiringAccounts(String username, List<Map<String, dynamic>> users)
 
   return _layout(username, 'Ablaufende Accounts', '''
     <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-      <a href="/" class="btn btn-ghost btn-sm">← Zurück</a>
+      <a href="javascript:history.back()" class="btn btn-ghost btn-sm">← Zurück</a>
       <div>
         <h2 style="font-size:1rem;font-weight:600;">Ablaufende Accounts</h2>
         <p style="font-size:.78rem;color:var(--gray-400);">Accounts die in den nächsten 30 Tagen ablaufen (${users.length} gefunden)</p>
@@ -3626,13 +3776,21 @@ String renderRolesPage(String username, Map<String, dynamic> roles, {String csrf
   final rows = rolesList.map((e) {
     final u = _esc(e.key);
     final role = e.value.toString();
+    final isOwnAccount = e.key.toLowerCase() == username.toLowerCase();
+    final selectHtml = isOwnAccount
+        // Eigener Account: nur Admin-Option (nicht degradierbar)
+        ? '<select name="${_esc(e.key)}" disabled style="padding:.3rem .6rem;border:1px solid var(--gray-200);border-radius:6px;font-size:.85rem;opacity:.6;">'
+          '<option value="admin" selected>Admin (alles)</option>'
+          '</select>'
+          '<input type="hidden" name="${_esc(e.key)}" value="admin">'
+        : '<select name="${_esc(e.key)}" style="padding:.3rem .6rem;border:1px solid var(--gray-200);border-radius:6px;font-size:.85rem;">'
+          '${roleOption(e.key, role, 'admin', 'Admin (alles)')} '
+          '${roleOption(e.key, role, 'operator', 'Operator (keine Attribut-Bearbeitung)')} '
+          '${roleOption(e.key, role, 'readonly', 'Nur-Lesen')}'
+          '</select>';
     return '<tr>'
-        '<td style="font:500 .88rem var(--mono);">$u</td>'
-        '<td><select name="${_esc(e.key)}" style="padding:.3rem .6rem;border:1px solid var(--gray-200);border-radius:6px;font-size:.85rem;">'
-        '${roleOption(e.key, role, 'admin', 'Admin (alles)')} '
-        '${roleOption(e.key, role, 'operator', 'Operator (keine Attribut-Bearbeitung)')} '
-        '${roleOption(e.key, role, 'readonly', 'Nur-Lesen')}'
-        '</select></td>'
+        '<td style="font:500 .88rem var(--mono);">$u${isOwnAccount ? ' <em style="font:400 .75rem var(--sans);color:var(--gray-400);">(du)</em>' : ''}</td>'
+        '<td>$selectHtml</td>'
         '</tr>';
   }).join('\n');
 

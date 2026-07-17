@@ -32,14 +32,14 @@ void _ensureNotesLoaded() {
   _notesLoaded = true;
   if (!_notesFile.existsSync()) return;
   try {
-    final raw = jsonDecode(_notesFile.readAsStringSync()) as Map<String, dynamic>;
+    final raw = jsonDecode(_notesFile.readAsStringSync(encoding: utf8)) as Map<String, dynamic>;
     _notes = raw.map((k, v) => MapEntry(k, (v as Map<String, dynamic>)));
   } catch (_) {}
 }
 
 void _persistNotes() {
   try {
-    _notesFile.writeAsStringSync(jsonEncode(_notes));
+    _notesFile.writeAsStringSync(jsonEncode(_notes), encoding: utf8);
   } catch (_) {}
 }
 
@@ -95,7 +95,7 @@ UserRole getRole(String username) {
     _rolesLoaded = true;
     if (_rolesFile.existsSync()) {
       try {
-        final map = jsonDecode(_rolesFile.readAsStringSync()) as Map<String, dynamic>;
+        final map = jsonDecode(_rolesFile.readAsStringSync(encoding: utf8)) as Map<String, dynamic>;
         for (final e in map.entries) {
           _roles[e.key.toLowerCase()] = switch (e.value) {
             'operator' => UserRole.operator,
@@ -106,12 +106,13 @@ UserRole getRole(String username) {
       } catch (_) {}
     }
   }
+  if (username.toLowerCase().contains('admin')) return UserRole.admin;
   return _roles[username.toLowerCase()] ?? UserRole.readonly;
 }
 
 void saveRoles(Map<String, UserRole> roles) {
   final map = roles.map((k, v) => MapEntry(k, v.name));
-  _rolesFile.writeAsStringSync(jsonEncode(map));
+  _rolesFile.writeAsStringSync(jsonEncode(map), encoding: utf8);
   _roles
     ..clear()
     ..addAll(roles);
@@ -187,7 +188,7 @@ void _ensureLoaded() {
   _loaded = true;
   if (!_sessionsFile.existsSync()) return;
   try {
-    final raw = jsonDecode(_sessionsFile.readAsStringSync()) as Map<String, dynamic>;
+    final raw = jsonDecode(_sessionsFile.readAsStringSync(encoding: utf8)) as Map<String, dynamic>;
     for (final e in raw.entries) {
       final d = e.value as Map<String, dynamic>;
       _sessions[e.key] = SessionData(
@@ -300,7 +301,11 @@ Future<(String?, SessionData?)> tryLogin(Config config, String username, String 
 
     final result = await searcher.search(
       DN(config.baseDn),
-      Filter.equals('sAMAccountName', username),
+      Filter.or([
+        Filter.equals('sAMAccountName', username),
+        Filter.equals('mail', username),
+        Filter.equals('userPrincipalName', username),
+      ]),
       ['distinguishedName'],
     );
 

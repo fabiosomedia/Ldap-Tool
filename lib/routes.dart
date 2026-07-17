@@ -25,7 +25,7 @@ UserRole _role(Request req) {
   return getRole(s.username);
 }
 
-// Passwort-KomplexitÃ¤t prÃ¼fen (server-seitig)
+// Passwort-Komplexität prüfen (server-seitig)
 bool _isPasswordStrong(String pwd) {
   if (pwd.length < 8) return false;
   if (!RegExp(r'[A-Z]').hasMatch(pwd)) return false;
@@ -38,8 +38,17 @@ const _html = {
   'content-type': 'text/html; charset=utf-8',
   'cache-control': 'no-store',
   'x-content-type-options': 'nosniff',
-  'x-frame-options': 'SAMEORIGIN',
+  'x-frame-options': 'DENY',
   'referrer-policy': 'same-origin',
+  'content-security-policy':
+      "default-src 'self'; "
+      "script-src 'self' 'unsafe-inline'; "
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+      "font-src https://fonts.gstatic.com; "
+      "img-src 'self' data:; "
+      "object-src 'none'; "
+      "base-uri 'self'; "
+      "form-action 'self'",
 };
 
 Response _forbidden(String username) =>
@@ -63,7 +72,13 @@ Response handleLoginPage(Request req) =>
 
 Future<Response> handleLoginPost(Request req, Config config) async {
   final params = Uri.splitQueryString(await req.readAsString());
-  final username = params['username'] ?? '';
+  // Unterstützt domain\username und user@domain → nur username extrahieren
+  final rawUsername = params['username'] ?? '';
+  final username = rawUsername.contains('\\')
+      ? rawUsername.split('\\').last
+      : rawUsername.contains('@')
+          ? rawUsername.split('@').first
+          : rawUsername;
   if (isLoginBlocked(username)) {
     return _ok(renderLogin('Account temporär gesperrt (zu viele Fehlversuche). Bitte 15 Minuten warten.'));
   }
@@ -115,7 +130,7 @@ Future<Response> handleSearch(Request req, Config config) async {
   final token = extractToken(req.headers['cookie']);
   final session = getSession(token);
   if (session == null) return Response.found('/login');
-  final q = req.url.queryParameters['q'] ?? '';
+  final q = (req.url.queryParameters['q'] ?? '').substring(0, ((req.url.queryParameters['q'] ?? '').length).clamp(0, 100));
   if (q.isNotEmpty && token != null) {
     addSearchHistory(token, q);
   }
@@ -182,13 +197,13 @@ Future<Response> handleModify(Request req, Config config) async {
   }
   try {
     await LdapClient(config, session).modifyUser(dn, attribute, value);
-    auditLog(session.username, 'Attribut geÃ¤ndert: $attribute = $value', dn);
+    auditLog(session.username, 'Attribut geändert: $attribute = $value', dn);
     final redirect = back.isNotEmpty
         ? '/user?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}'
         : '/';
     return Response.found(redirect);
   } catch (e) {
-    return _ok(renderError(session.username, 'Ã„nderung fehlgeschlagen: $e'));
+    return _ok(renderError(session.username, 'Änderung fehlgeschlagen: $e'));
   }
 }
 
@@ -198,10 +213,12 @@ Future<Response> handlePhotoUpload(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   final dn = params['dn'] ?? '';
   final b64 = params['photo_b64'] ?? '';
   final back = params['back'] ?? '';
   if (dn.isEmpty || b64.isEmpty) return Response.badRequest(body: 'Fehlende Parameter');
+  if (b64.length > 700000) return Response.badRequest(body: 'Foto zu gross (max. 512 KB).');
   try {
     final bytes = Uint8List.fromList(base64Decode(b64));
     await LdapClient(config, session).updatePhoto(dn, bytes);
@@ -216,15 +233,16 @@ Future<Response> handlePhotoDelete(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   final dn = params['dn'] ?? '';
   final back = params['back'] ?? '';
   if (dn.isEmpty) return Response.badRequest(body: 'Fehlender DN');
   try {
     await LdapClient(config, session).deletePhoto(dn);
-    auditLog(session.username, 'Foto gelÃ¶scht', dn);
+    auditLog(session.username, 'Foto gelöscht', dn);
     return Response.found('/user?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}');
   } catch (e) {
-    return _ok(renderError(session.username, 'LÃ¶schen fehlgeschlagen: $e'));
+    return _ok(renderError(session.username, 'Löschen fehlgeschlagen: $e'));
   }
 }
 
@@ -259,8 +277,8 @@ Future<Response> handlePwExpiring(Request req, Config config) async {
   if (session == null) return Response.found('/login');
   try {
     final users = await LdapClient(config, session).getUsersExpiringPasswords();
-    return _ok(renderQuickUsers(session.username, 'Passwort lÃ¤uft bald ab',
-        'Passwort lÃ¤uft in den nÃ¤chsten 14 Tagen ab', users, extraCol: 'Tage'));
+    return _ok(renderQuickUsers(session.username, 'Passwort läuft bald ab',
+        'Passwort läuft in den nächsten 14 Tagen ab', users, extraCol: 'Tage'));
   } catch (e) {
     return _ok(renderError(session.username, 'Fehler: $e'));
   }
@@ -271,7 +289,7 @@ Future<Response> handlePwExpiring(Request req, Config config) async {
 Future<Response> handleGroups(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
-  final q = req.url.queryParameters['q'] ?? '';
+  final q = (req.url.queryParameters['q'] ?? '').substring(0, ((req.url.queryParameters['q'] ?? '').length).clamp(0, 100));
   try {
     final client = LdapClient(config, session);
     final groups = await client.searchGroups(q);
@@ -300,6 +318,7 @@ Future<Response> handleGroupAdd(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final userDn = params['user_dn'] ?? '';
   final groupName = params['group_name'] ?? '';
@@ -312,12 +331,12 @@ Future<Response> handleGroupAdd(Request req, Config config) async {
     }
     if (groups.length == 1) {
       await LdapClient(config, session).addUserToGroup(userDn, groups.first['dn']);
-      auditLog(session.username, 'Gruppe hinzugefÃ¼gt: $groupName', userDn);
+      auditLog(session.username, 'Gruppe hinzugefügt: $groupName', userDn);
       return Response.found('/user?dn=${Uri.encodeComponent(userDn)}&q=${Uri.encodeComponent(back)}');
     }
-    return _ok(renderGroupPicker(session.username, userDn, back, groups, 'HinzufÃ¼gen'));
+    return _ok(renderGroupPicker(session.username, userDn, back, groups, 'Hinzufügen', _csrfFor(req)));
   } catch (e) {
-    return _ok(renderError(session.username, 'Gruppe hinzufÃ¼gen fehlgeschlagen: $e'));
+    return _ok(renderError(session.username, 'Gruppe hinzufügen fehlgeschlagen: $e'));
   }
 }
 
@@ -325,6 +344,7 @@ Future<Response> handleGroupAddConfirm(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final userDn = params['user_dn'] ?? '';
   final groupDn = params['group_dn'] ?? '';
@@ -332,10 +352,10 @@ Future<Response> handleGroupAddConfirm(Request req, Config config) async {
   if (userDn.isEmpty || groupDn.isEmpty) return Response.badRequest(body: 'Fehlende Parameter');
   try {
     await LdapClient(config, session).addUserToGroup(userDn, groupDn);
-    auditLog(session.username, 'Gruppe hinzugefÃ¼gt', userDn, groupDn);
+    auditLog(session.username, 'Gruppe hinzugefügt', userDn, groupDn);
     return Response.found('/user?dn=${Uri.encodeComponent(userDn)}&q=${Uri.encodeComponent(back)}');
   } catch (e) {
-    return _ok(renderError(session.username, 'HinzufÃ¼gen fehlgeschlagen: $e'));
+    return _ok(renderError(session.username, 'Hinzufügen fehlgeschlagen: $e'));
   }
 }
 
@@ -343,6 +363,7 @@ Future<Response> handleGroupRemove(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final userDn = params['user_dn'] ?? '';
   final groupDn = params['group_dn'] ?? '';
@@ -364,6 +385,7 @@ Future<Response> handleGroupsCopy(Request req, Config config) async {
   final session = getSession(token);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   final userDn = params['user_dn'] ?? '';
   final userName = params['user_name'] ?? '';
   final back = params['back'] ?? '';
@@ -383,6 +405,7 @@ Future<Response> handleGroupsPaste(Request req, Config config) async {
   final session = getSession(token);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final userDn = params['user_dn'] ?? '';
   final back = params['back'] ?? '';
@@ -401,9 +424,9 @@ Future<Response> handleGroupsPaste(Request req, Config config) async {
   }
   if (errors.isNotEmpty) {
     return _ok(renderError(session.username,
-        '${clipboard.groupDns.length - errors.length} von ${clipboard.groupDns.length} Gruppen Ã¼bernommen. Fehler bei: ${errors.join(', ')}'));
+        '${clipboard.groupDns.length - errors.length} von ${clipboard.groupDns.length} Gruppen übernommen. Fehler bei: ${errors.join(', ')}'));
   }
-  auditLog(session.username, 'Gruppen eingefÃ¼gt (${clipboard.groupDns.length})', userDn, 'von ${clipboard.sourceUsername}');
+  auditLog(session.username, 'Gruppen eingefügt (${clipboard.groupDns.length})', userDn, 'von ${clipboard.sourceUsername}');
   return Response.found('/user?dn=${Uri.encodeComponent(userDn)}&q=${Uri.encodeComponent(back)}');
 }
 
@@ -413,6 +436,7 @@ Future<Response> handleBulkGroupAdd(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final userDns = (params['user_dns'] ?? '').split('\n').where((s) => s.isNotEmpty).toList();
   final groupName = params['group_name'] ?? '';
@@ -426,7 +450,7 @@ Future<Response> handleBulkGroupAdd(Request req, Config config) async {
     }
     final groupDn = groups.first['dn'] as String;
     await client.addUsersToGroup(userDns, groupDn);
-    auditLog(session.username, 'Bulk-Gruppe hinzugefÃ¼gt: $groupName', '', '${userDns.length} User');
+    auditLog(session.username, 'Bulk-Gruppe hinzugefügt: $groupName', '', '${userDns.length} User');
     return Response.found('/search?q=${Uri.encodeComponent(back)}');
   } catch (e) {
     return _ok(renderError(session.username, 'Bulk-Aktion fehlgeschlagen: $e'));
@@ -445,14 +469,14 @@ Future<Response> handlePasswordReset(Request req, Config config) async {
   final password = params['password'] ?? '';
   final back = params['back'] ?? '';
   if (dn.isEmpty || password.isEmpty) return Response.badRequest(body: 'Fehlende Parameter');
-  // Server-seitige Passwort-KomplexitÃ¤t prÃ¼fen
+  // Server-seitige Passwort-Komplexität prüfen
   if (!_isPasswordStrong(password)) {
     return _ok(renderError(session.username,
         'Passwort zu schwach. Mindestanforderungen: mind. 8 Zeichen, Gross- und Kleinbuchstaben, Zahl.'));
   }
   try {
     await LdapClient(config, session).resetPassword(dn, password);
-    auditLog(session.username, 'Passwort zurÃ¼ckgesetzt', dn);
+    auditLog(session.username, 'Passwort zurückgesetzt', dn);
     return Response.found('/user?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}&msg=pw_ok');
   } catch (e) {
     return _ok(renderError(session.username, 'Passwort-Reset fehlgeschlagen: $e'));
@@ -475,7 +499,7 @@ Future<Response> handleAccountToggle(Request req, Config config) async {
     auditLog(session.username, disable ? 'Account deaktiviert' : 'Account aktiviert', dn);
     return Response.found('/user?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}');
   } catch (e) {
-    return _ok(renderError(session.username, 'Account-Ã„nderung fehlgeschlagen: $e'));
+    return _ok(renderError(session.username, 'Account-Änderung fehlgeschlagen: $e'));
   }
 }
 
@@ -502,7 +526,7 @@ Future<Response> handleAccountUnlock(Request req, Config config) async {
 Future<Response> handleExportSearch(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
-  final q = req.url.queryParameters['q'] ?? '';
+  final q = (req.url.queryParameters['q'] ?? '').substring(0, ((req.url.queryParameters['q'] ?? '').length).clamp(0, 100));
   if (q.isEmpty) return Response.badRequest(body: 'Kein Suchbegriff');
   try {
     final users = await LdapClient(config, session).searchUsers(q);
@@ -549,6 +573,7 @@ Future<Response> handleSettingsPost(Request req) async {
   final session = getSession(token);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   final key = params['key'] ?? '';
   if (key.isNotEmpty && token != null) {
     toggleSessionSetting(token, key);
@@ -596,7 +621,7 @@ Future<Response> handleMoveUserForm(Request req, Config config) async {
     final user = await client.getUserDetails(dn);
     if (user == null) return _ok(renderError(session.username, 'User nicht gefunden.'));
     final ous = await client.getOUs();
-    return _ok(renderMoveForm(session.username, user, ous, back));
+    return _ok(renderMoveForm(session.username, user, ous, config.baseDn, back));
   } catch (e) {
     return _ok(renderError(session.username, 'Fehler: $e'));
   }
@@ -606,6 +631,7 @@ Future<Response> handleMoveUserPost(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final dn = params['dn'] ?? '';
   final targetOu = params['target_ou'] ?? '';
@@ -622,12 +648,13 @@ Future<Response> handleMoveUserPost(Request req, Config config) async {
   }
 }
 
-// â”€â”€ Feature 6: Gruppen erstellen + lÃ¶schen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Feature 6: Gruppen erstellen + löschen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 Future<Response> handleCreateGroup(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final name = params['name'] ?? '';
   final ouDn = params['ou_dn'] ?? '';
@@ -646,15 +673,16 @@ Future<Response> handleDeleteGroup(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) != UserRole.admin) return _ok(renderError(session.username, 'Nur Admins dÃ¼rfen Gruppen lÃ¶schen.'));
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
+  if (_role(req) != UserRole.admin) return _ok(renderError(session.username, 'Nur Admins dürfen Gruppen löschen.'));
   final groupDn = params['group_dn'] ?? '';
   if (groupDn.isEmpty) return Response.badRequest(body: 'Fehlender DN');
   try {
     await LdapClient(config, session).deleteGroup(groupDn);
-    auditLog(session.username, 'Gruppe gelÃ¶scht', groupDn);
+    auditLog(session.username, 'Gruppe gelöscht', groupDn);
     return Response.found('/groups');
   } catch (e) {
-    return _ok(renderError(session.username, 'Gruppe lÃ¶schen fehlgeschlagen: $e'));
+    return _ok(renderError(session.username, 'Gruppe löschen fehlgeschlagen: $e'));
   }
 }
 
@@ -664,6 +692,7 @@ Future<Response> handleBulkUnlock(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final userDns = (params['user_dns'] ?? '').split('\n').where((s) => s.isNotEmpty).toList();
   final back = params['back'] ?? '';
@@ -681,6 +710,7 @@ Future<Response> handleBulkDisable(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final userDns = (params['user_dns'] ?? '').split('\n').where((s) => s.isNotEmpty).toList();
   final action = params['action'] ?? 'disable';
@@ -725,7 +755,8 @@ Future<Response> handleClonePost(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
-  if (_role(req) != UserRole.admin) return _ok(renderError(session.username, 'Nur Admins dÃ¼rfen User erstellen.'));
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
+  if (_role(req) != UserRole.admin) return _ok(renderError(session.username, 'Nur Admins dürfen User erstellen.'));
   final templateDn = params['template_dn'] ?? '';
   final parentOuDn = params['parent_ou'] ?? '';
   final givenName = params['givenName'] ?? '';
@@ -780,6 +811,7 @@ Future<Response> handlePasswordMustChange(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final dn = params['dn'] ?? '';
   final back = params['back'] ?? '';
@@ -797,6 +829,7 @@ Future<Response> handlePwdNeverExpires(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final dn = params['dn'] ?? '';
   final uac = int.tryParse(params['uac'] ?? '0') ?? 0;
@@ -805,7 +838,7 @@ Future<Response> handlePwdNeverExpires(Request req, Config config) async {
   if (dn.isEmpty) return Response.badRequest(body: 'Fehlender DN');
   try {
     await LdapClient(config, session).setPwdNeverExpires(dn, uac, enable);
-    auditLog(session.username, enable ? 'Passwort lÃ¤uft nie ab: ein' : 'Passwort lÃ¤uft nie ab: aus', dn);
+    auditLog(session.username, enable ? 'Passwort läuft nie ab: ein' : 'Passwort läuft nie ab: aus', dn);
     return Response.found('/user?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}');
   } catch (e) {
     return _ok(renderError(session.username, 'Fehler: $e'));
@@ -816,6 +849,7 @@ Future<Response> handleAccountExpiry(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final dn = params['dn'] ?? '';
   final expiryStr = params['expiry'] ?? '';
@@ -949,6 +983,8 @@ Future<Response> handleComputerMoveLager(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
+  if (_role(req) == UserRole.readonly) return _ok(renderError(session.username, 'Keine Berechtigung (readonly).'));
   final dn = params['dn'] ?? '';
   final targetOu = params['target_ou'] ?? '';
   if (dn.isEmpty || targetOu.isEmpty) return Response.badRequest(body: 'Fehlende Parameter');
@@ -1002,6 +1038,7 @@ Future<Response> handleFavoriteToggle(Request req) async {
   final session = getSession(token);
   if (session == null || token == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   final dn = params['dn'] ?? '';
   final name = params['name'] ?? dn;
   final back = params['back'] ?? '';
@@ -1142,6 +1179,7 @@ Future<Response> handleSetNote(Request req) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   final dn = params['dn'] ?? '';
   final text = params['text'] ?? '';
   final back = params['back'] ?? '';
@@ -1208,7 +1246,7 @@ Response handleConfigPage(Request req, Config config) {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   if (_role(req) != UserRole.admin) {
-    return _ok(renderError(session.username, 'Nur Admins dÃ¼rfen die Konfiguration Ã¤ndern.'));
+    return _ok(renderError(session.username, 'Nur Admins dürfen die Konfiguration ändern.'));
   }
   final saved = req.url.queryParameters['saved'] == '1';
   return _ok(renderConfigPage(session.username, config, saved: saved, csrfToken: _csrfFor(req)));
@@ -1218,9 +1256,10 @@ Future<Response> handleConfigPost(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   if (_role(req) != UserRole.admin) {
-    return _ok(renderError(session.username, 'Nur Admins dÃ¼rfen die Konfiguration Ã¤ndern.'));
+    return _ok(renderError(session.username, 'Nur Admins dürfen die Konfiguration ändern.'));
   }
   final params = Uri.splitQueryString(await req.readAsString());
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
   final updates = <String, String>{};
   if ((params['AD_SERVER'] ?? '').isNotEmpty)   updates['AD_SERVER']   = params['AD_SERVER']!;
   if ((params['AD_PORT'] ?? '').isNotEmpty)     updates['AD_PORT']     = params['AD_PORT']!;
@@ -1229,7 +1268,7 @@ Future<Response> handleConfigPost(Request req, Config config) async {
   if ((params['AD_PASSWORD'] ?? '').isNotEmpty) updates['AD_PASSWORD'] = params['AD_PASSWORD']!;
   if ((params['BASE_DN'] ?? '').isNotEmpty)     updates['BASE_DN']     = params['BASE_DN']!;
   config.save(updates);
-  auditLog(session.username, 'Konfiguration geÃ¤ndert', '');
+  auditLog(session.username, 'Konfiguration geändert', '');
   return Response.found('/config?saved=1');
 }
 
@@ -1250,8 +1289,8 @@ Future<Response> handleHealth(Request req, Config config) async {
     await conn.close();
     return Response.ok('{"status":"ok","ldap":"connected"}',
         headers: {'content-type': 'application/json'});
-  } catch (e) {
-    return Response(503, body: '{"status":"error","ldap":"${e.toString().replaceAll('"', '\\"')}"}',
+  } catch (_) {
+    return Response(503, body: '{"status":"error","ldap":"unreachable"}',
         headers: {'content-type': 'application/json'});
   }
 }
@@ -1262,7 +1301,7 @@ Response handleRolesPage(Request req) {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   if (_role(req) != UserRole.admin) {
-    return _ok(renderError(session.username, 'Nur Admins dÃ¼rfen Rollen verwalten.'));
+    return _ok(renderError(session.username, 'Nur Admins dürfen Rollen verwalten.'));
   }
   final roles = getAllRoles();
   return _ok(renderRolesPage(session.username, roles, csrfToken: _csrfFor(req)));
@@ -1272,21 +1311,25 @@ Future<Response> handleRolesPost(Request req) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   if (_role(req) != UserRole.admin) {
-    return _ok(renderError(session.username, 'Nur Admins dÃ¼rfen Rollen verwalten.'));
+    return _ok(renderError(session.username, 'Nur Admins dürfen Rollen verwalten.'));
   }
   final params = Uri.splitQueryString(await req.readAsString());
-  // Parse user=role pairs
+  if (!_validCsrf(req, params)) return _forbidden(session.username);
+  // Parse user=role pairs — eigener Account bleibt immer Admin
   final newRoles = <String, UserRole>{};
   for (final e in params.entries) {
     if (e.key == '_csrf') continue;
-    newRoles[e.key] = switch (e.value) {
-      'operator' => UserRole.operator,
-      'readonly'  => UserRole.readonly,
-      _ => UserRole.admin,
-    };
+    final isOwnAccount = e.key.toLowerCase() == session.username.toLowerCase();
+    newRoles[e.key] = isOwnAccount
+        ? UserRole.admin
+        : switch (e.value) {
+            'operator' => UserRole.operator,
+            'readonly'  => UserRole.readonly,
+            _ => UserRole.admin,
+          };
   }
   saveRoles(newRoles);
-  auditLog(session.username, 'Rollen gespeichert', '', '${newRoles.length} EintrÃ¤ge');
+  auditLog(session.username, 'Rollen gespeichert', '', '${newRoles.length} Einträge');
   return Response.found('/admin/roles');
 }
 

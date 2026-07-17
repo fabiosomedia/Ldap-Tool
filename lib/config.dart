@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:dotenv/dotenv.dart';
+import 'package:ldap_tool/credential_store.dart';
 
 class Config {
   String server;
@@ -81,10 +83,31 @@ class Config {
         .where((s) => s.isNotEmpty)
         .toList();
 
+    // Passwort aus Windows Credential Manager lesen
+    String? bindPassword = readCredential();
+
+    if (bindPassword == null) {
+      // Migrations-Pfad: AD_PASSWORD noch in .env vorhanden
+      final envPassword = env['AD_PASSWORD'];
+      if (envPassword != null && envPassword.isNotEmpty) {
+        final bindUser = env['AD_USER'] ?? '';
+        writeCredential(bindUser, envPassword);
+        _removePasswordFromEnv(envPath);
+        bindPassword = envPassword;
+        print('[LDAPatschifig] AD_PASSWORD aus .env in Windows Credential Manager migriert und aus .env entfernt.');
+      } else {
+        throw Exception(
+          'AD-Passwort nicht gefunden!\n'
+          'Weder im Windows Credential Manager noch in der .env.\n'
+          'Bitte AD_PASSWORD einmalig in die .env eintragen — beim nächsten Start wird es automatisch migriert.',
+        );
+      }
+    }
+
     return Config(
       server: env['AD_SERVER'] ?? '',
       bindUser: env['AD_USER'] ?? '',
-      bindPassword: env['AD_PASSWORD'] ?? '',
+      bindPassword: bindPassword,
       baseDn: env['BASE_DN'] ?? '',
       port: int.tryParse(env['AD_PORT'] ?? '389') ?? 389,
       useSsl: env['AD_SSL'] == 'true',
@@ -102,8 +125,16 @@ class Config {
     );
   }
 
-  /// Speichere Updates in die .env-Datei und aktualisiere dieses Config-Objekt
+  /// Speichere Updates in die .env-Datei und aktualisiere dieses Config-Objekt.
+  /// AD_PASSWORD wird in den Windows Credential Manager geschrieben, nicht in die .env.
   void save(Map<String, String> updates) {
+    // AD_PASSWORD → Credential Manager statt .env
+    if (updates.containsKey('AD_PASSWORD') && updates['AD_PASSWORD']!.isNotEmpty) {
+      writeCredential(bindUser, updates['AD_PASSWORD']!);
+      bindPassword = updates['AD_PASSWORD']!;
+      updates = Map.of(updates)..remove('AD_PASSWORD');
+    }
+
     final exeDir = File(Platform.resolvedExecutable).parent.path;
     final envPaths = ['$exeDir\\.env', '$exeDir/.env', '.env'];
     final envPath = envPaths.firstWhere(
@@ -111,21 +142,25 @@ class Config {
       orElse: () => '$exeDir${Platform.pathSeparator}.env',
     );
 
-    // Aktuelle .env einlesen
+    // Aktuelle .env einlesen (ohne AD_PASSWORD-Zeilen)
     final envFile = File(envPath);
-    final lines = envFile.existsSync() ? envFile.readAsLinesSync() : <String>[];
+    final lines = envFile.existsSync()
+        ? envFile.readAsStringSync(encoding: utf8).split('\n').map((l) => l.trimRight()).toList()
+        : <String>[];
     final existing = <String, String>{};
     for (final line in lines) {
       if (line.trim().isEmpty || line.startsWith('#')) continue;
       final idx = line.indexOf('=');
       if (idx > 0) {
-        existing[line.substring(0, idx).trim()] = line.substring(idx + 1).trim();
+        final key = line.substring(0, idx).trim();
+        if (key == 'AD_PASSWORD') continue; // nie in .env speichern
+        existing[key] = line.substring(idx + 1).trim();
       }
     }
 
     // Updates anwenden (leere Werte → alten Wert behalten)
     for (final e in updates.entries) {
-      if (e.value.isNotEmpty) {
+      if (e.value.isNotEmpty && e.key != 'AD_PASSWORD') {
         existing[e.key] = e.value;
       }
     }
@@ -135,12 +170,11 @@ class Config {
     for (final e in existing.entries) {
       buf.writeln('${e.key}=${e.value}');
     }
-    envFile.writeAsStringSync(buf.toString());
+    envFile.writeAsStringSync(buf.toString(), encoding: utf8);
 
     // Config-Objekt in-place aktualisieren
     server           = existing['AD_SERVER']        ?? server;
     bindUser         = existing['AD_USER']          ?? bindUser;
-    bindPassword     = existing['AD_PASSWORD']      ?? bindPassword;
     baseDn           = existing['BASE_DN']          ?? baseDn;
     port             = int.tryParse(existing['AD_PORT'] ?? '') ?? port;
     useSsl           = (existing['AD_SSL'] ?? 'false') == 'true';
@@ -148,5 +182,17 @@ class Config {
     lagerOu          = existing['LAGER_OU']         ?? lagerOu;
     final pr         = existing['COMPUTER_PREFIX'] ?? '';
     computerPrefixes = pr.split(',').map((s) => s.trim().toLowerCase()).where((s) => s.isNotEmpty).toList();
+  }
+
+  static void _removePasswordFromEnv(String envPath) {
+    final file = File(envPath);
+    if (!file.existsSync()) return;
+    final lines = file
+        .readAsStringSync(encoding: utf8)
+        .split('\n')
+        .map((l) => l.trimRight())
+        .where((l) => !l.startsWith('AD_PASSWORD='))
+        .toList();
+    file.writeAsStringSync('${lines.join('\r\n')}\r\n', encoding: utf8);
   }
 }

@@ -4,10 +4,10 @@ import 'auth.dart';
 import 'config.dart';
 import 'ldap_client.dart';
 
-Future<void> sendWeeklyReport(Config config) async {
+Future<bool> sendWeeklyReport(Config config) async {
   if (!config.smtpConfigured) {
     print('[Wochen-Report] SMTP nicht konfiguriert – übersprungen.');
-    return;
+    return false;
   }
 
   // Service-Session mit Bind-Account
@@ -41,20 +41,23 @@ Future<void> sendWeeklyReport(Config config) async {
     username: config.smtpUser.isNotEmpty ? config.smtpUser : null,
     password: config.smtpPassword.isNotEmpty ? config.smtpPassword : null,
     ignoreBadCertificate: true,
+    allowInsecure: true,
   );
 
   final from = config.smtpFrom.isNotEmpty ? config.smtpFrom : 'userdesk@$domain';
   final message = Message()
-    ..from = Address(from, 'UserDesk')
+    ..from = Address(from, 'LDAPatschifig')
     ..recipients.addAll(config.smtpTo.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty))
-    ..subject = 'UserDesk Wochen-Report – $dateStr'
+    ..subject = 'LDAPatschifig Wochen-Report – $dateStr'
     ..html = html;
 
   try {
     await send(message, smtpServer);
     print('[Wochen-Report] E-Mail gesendet an ${config.smtpTo}');
+    return true;
   } catch (e) {
     print('[Wochen-Report] Senden fehlgeschlagen: $e');
+    return false;
   }
 }
 
@@ -88,13 +91,13 @@ String _buildHtml(String domain, String date,
 <body style="font-family:Inter,Arial,sans-serif;background:#f9fafb;margin:0;padding:2rem;">
 <div style="max-width:680px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.1);">
   <div style="background:#2563eb;padding:1.5rem 2rem;">
-    <div style="font:700 20px sans-serif;color:#fff;">UserDesk</div>
+    <div style="font:700 20px sans-serif;color:#fff;">LDAPatschifig</div>
     <div style="font:400 13px sans-serif;color:#bfdbfe;margin-top:.25rem;">Wochen-Report – $date · $domain</div>
   </div>
   <div style="padding:1.5rem 2rem;">
 
     <h2 style="font-size:15px;font-weight:700;color:#1e293b;margin:0 0 .75rem;">
-      🔒 Gesperrte Benutzer (${locked.length})
+      Gesperrte Benutzer (${locked.length})
     </h2>
     <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:2rem;">
       <thead>
@@ -110,7 +113,7 @@ String _buildHtml(String domain, String date,
     </table>
 
     <h2 style="font-size:15px;font-weight:700;color:#1e293b;margin:0 0 .75rem;">
-      ⏳ Passwort läuft ab – diese Woche (${expiring.length})
+      Passwort läuft ab – diese Woche (${expiring.length})
     </h2>
     <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:1.5rem;">
       <thead>
@@ -128,7 +131,7 @@ String _buildHtml(String domain, String date,
 
   </div>
   <div style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:1rem 2rem;font:400 12px sans-serif;color:#94a3b8;">
-    UserDesk · Automatisch generiert · Benutzerverwaltung $domain
+    LDAPatschifig · Automatisch generiert · Benutzerverwaltung $domain
   </div>
 </div>
 </body>

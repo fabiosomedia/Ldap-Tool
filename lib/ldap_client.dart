@@ -136,10 +136,11 @@ class LdapClient {
               Filter.substring('mail', '*$query*'),
               Filter.substring('initials', '*$query*'),
               Filter.substring('description', '*$query*'),
+              Filter.substring('extensionAttribute1', '*$query*'),
             ]);
       final attrs = ['cn', 'sAMAccountName', 'mail', 'department',
                      'userAccountControl', 'lockoutTime', 'distinguishedName', 'jpegPhoto', 'thumbnailPhoto',
-                     'accountExpires', 'pwdLastSet', 'description'];
+                     'accountExpires', 'pwdLastSet', 'description', 'extensionAttribute1'];
       final entries = query.isEmpty
           ? await _pagedSearch(conn, filter, attrs)
           : await conn.search(DN(config.baseDn), filter, attrs).then((sr) => sr.stream.toList());
@@ -177,7 +178,7 @@ class LdapClient {
         'company', 'streetAddress', 'l', 'postalCode', 'description',
         'userAccountControl', 'lockoutTime', 'memberOf', 'jpegPhoto', 'thumbnailPhoto', 'distinguishedName',
         'whenCreated', 'whenChanged', 'lastLogonTimestamp', 'pwdLastSet', 'accountExpires',
-        'physicalDeliveryOfficeName', 'initials',
+        'physicalDeliveryOfficeName', 'initials', 'extensionAttribute1',
       ];
       final result = await conn.search(
         DN(config.baseDn),
@@ -707,13 +708,23 @@ class LdapClient {
       final filter = Filter.and([
         Filter.equals('objectCategory', 'person'),
         Filter.equals('objectClass', 'user'),
-        _extMatch('userAccountControl', '1.2.840.113556.1.4.803', '65536'),
       ]);
-      final attrs = ['cn', 'sAMAccountName', 'description', 'pwdLastSet', 'distinguishedName'];
+      final attrs = ['cn', 'sAMAccountName', 'description', 'pwdLastSet',
+                     'distinguishedName', 'userAccountControl'];
       final searchResult = await conn.search(DN(config.baseDn), filter, attrs);
       await for (final entry in searchResult.stream) {
         final dn = entry.dn.toString();
         if (dn.isEmpty) continue;
+        // Nur Konten die NICHT in einer OU=Benutzer liegen
+        final parts = dn.split(',').map((p) => p.trim().toLowerCase()).toList();
+        const _excludedOus = {
+          'ou=benutzer',
+          'ou=benutzer_ohne_redirection',
+          'ou=so_tu_user',
+          'ou=so_tu_user_365',
+          'ou=so_tu_admin_user',
+        };
+        if (parts.any((p) => _excludedOus.contains(p))) continue;
         final map = <String, dynamic>{'dn': dn};
         for (final attr in entry.attributes.values) {
           map[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
@@ -809,12 +820,17 @@ class LdapClient {
       final attrs = ['cn', 'dNSHostName', 'operatingSystem', 'operatingSystemVersion',
                      'lastLogonTimestamp', 'description', 'distinguishedName'];
       final searchResult = await conn.search(DN(config.baseDn), filter, attrs);
+      final prefixes = config.computerPrefixes;
       await for (final entry in searchResult.stream) {
         final dn = entry.dn.toString();
         if (dn.isEmpty) continue;
         final map = <String, dynamic>{'dn': dn};
         for (final attr in entry.attributes.values) {
           map[attr.name] = attr.values.isNotEmpty ? _ldapStr(attr.values.first) : '';
+        }
+        if (prefixes.isNotEmpty) {
+          final cn = (map['cn'] ?? '').toString().toLowerCase();
+          if (!prefixes.any((p) => cn.startsWith(p))) continue;
         }
         results.add(map);
       }

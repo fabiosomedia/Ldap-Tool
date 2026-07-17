@@ -9,6 +9,7 @@ import 'package:ldap_tool/config.dart';
 import 'package:ldap_tool/routes.dart';
 import 'package:ldap_tool/templates.dart';
 import 'package:ldap_tool/email_service.dart';
+import 'package:ldap_tool/ldap_client.dart';
 
 void _startWeeklyMailer(Config config) {
   String? _lastSentDate;
@@ -112,22 +113,30 @@ void main() async {
       ..get('/admin/roles', handleRolesPage)
       ..post('/admin/roles', handleRolesPost)
       ..get('/health', (Request r) => handleHealth(r, config))
-      ..get('/floorplan/preview', (Request r) {
+      ..get('/api/stats', (Request r) async {
         final session = getSession(extractToken(r.headers['cookie']));
-        if (session == null) return Response.found('/login');
-        return Response.ok(renderFloorplanPreview(session.username), headers: {'content-type': 'text/html; charset=utf-8'});
-      })
-      ..get('/floorplan/<name>', (Request r, String name) async {
-        if (!RegExp(r'^[a-z0-9]+\.png$').hasMatch(name)) return Response.notFound('');
-        final exeDir = File(Platform.resolvedExecutable).parent.path;
-        final file = File('$exeDir/floorplans/$name');
-        if (!await file.exists()) return Response.notFound('');
-        final bytes = await file.readAsBytes();
-        return Response.ok(bytes, headers: {'content-type': 'image/png', 'cache-control': 'max-age=3600'});
+        if (session == null) return Response(401, body: '{"error":"unauthorized"}', headers: {'content-type': 'application/json'});
+        try {
+          final stats = await LdapClient(config, session).getDashboardStats();
+          final total = stats['total'] ?? 0;
+          final disabled = stats['disabled'] ?? 0;
+          final locked = stats['locked'] ?? 0;
+          return Response.ok(
+            '{"total":$total,"disabled":$disabled,"locked":$locked,"active":${total - disabled}}',
+            headers: {'content-type': 'application/json'},
+          );
+        } catch (e) {
+          return Response(500, body: '{"error":"$e"}', headers: {'content-type': 'application/json'});
+        }
       })
       ..get('/admin/test-mail', (Request r) async {
-        await sendWeeklyReport(config);
-        return Response.found('/settings?msg=testmail');
+        final session = getSession(extractToken(r.headers['cookie']));
+        if (session == null) return Response.found('/login');
+        if (getRole(session.username) != UserRole.admin) {
+          return Response(403, body: 'Nur Admins dürfen Test-Mails senden.');
+        }
+        final ok = await sendWeeklyReport(config);
+        return Response.found('/settings?msg=${ok ? 'testmail-ok' : 'testmail-err'}');
       });
 
     final handler = Pipeline()
