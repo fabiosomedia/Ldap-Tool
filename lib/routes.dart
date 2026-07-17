@@ -12,6 +12,14 @@ import 'templates.dart';
 // Hilfsfunktion: Extrahiere Token aus Cookie-Header
 String? _token(Request req) => extractToken(req.headers['cookie']);
 
+// Erstes RDN-Element aus DN extrahieren, escaped Kommas (\,) überspringen
+String _firstRdn(String dn) {
+  for (int i = 0; i < dn.length; i++) {
+    if (dn[i] == ',' && (i == 0 || dn[i - 1] != '\\')) return dn.substring(0, i);
+  }
+  return dn;
+}
+
 // CSRF-Hilfsfunktionen
 String _csrfFor(Request req) => getCsrfToken(_token(req));
 
@@ -45,7 +53,7 @@ const _html = {
       "script-src 'self' 'unsafe-inline'; "
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
       "font-src https://fonts.gstatic.com; "
-      "img-src 'self' data:; "
+      "img-src 'self' data: blob:; "
       "object-src 'none'; "
       "base-uri 'self'; "
       "form-action 'self'",
@@ -254,7 +262,7 @@ Future<Response> handleLockedUsers(Request req, Config config) async {
   try {
     final users = await LdapClient(config, session).getLockedUsers();
     return _ok(renderQuickUsers(session.username, 'Gesperrte Benutzer',
-        'Benutzer mit aktivierter Kontosperre', users, extraCol: 'Entsperren'));
+        'Benutzer mit aktivierter Kontosperre', users, extraCol: 'Entsperren', csrfToken: _csrfFor(req)));
   } catch (e) {
     return _ok(renderError(session.username, 'Fehler: $e'));
   }
@@ -266,7 +274,7 @@ Future<Response> handleDisabledUsers(Request req, Config config) async {
   try {
     final users = await LdapClient(config, session).getDisabledUsers();
     return _ok(renderQuickUsers(session.username, 'Deaktivierte Benutzer',
-        'Benutzer mit deaktiviertem Konto', users, extraCol: 'Aktivieren'));
+        'Benutzer mit deaktiviertem Konto', users, extraCol: 'Aktivieren', csrfToken: _csrfFor(req)));
   } catch (e) {
     return _ok(renderError(session.username, 'Fehler: $e'));
   }
@@ -294,7 +302,7 @@ Future<Response> handleGroups(Request req, Config config) async {
     final client = LdapClient(config, session);
     final groups = await client.searchGroups(q);
     final ous = await client.getOUs();
-    return _ok(renderGroups(session.username, q, groups, ous));
+    return _ok(renderGroups(session.username, q, groups, ous, csrfToken: _csrfFor(req)));
   } catch (e) {
     return _ok(renderError(session.username, 'Gruppen laden fehlgeschlagen: $e'));
   }
@@ -565,7 +573,7 @@ Response handleSettingsPage(Request req) {
   if (session == null) return Response.found('/login');
   final settings = getSessionSettings(token);
   final msg = req.url.queryParameters['msg'];
-  return _ok(renderSettings(session.username, settings, msg: msg));
+  return _ok(renderSettings(session.username, settings, msg: msg, csrfToken: _csrfFor(req)));
 }
 
 Future<Response> handleSettingsPost(Request req) async {
@@ -621,7 +629,7 @@ Future<Response> handleMoveUserForm(Request req, Config config) async {
     final user = await client.getUserDetails(dn);
     if (user == null) return _ok(renderError(session.username, 'User nicht gefunden.'));
     final ous = await client.getOUs();
-    return _ok(renderMoveForm(session.username, user, ous, config.baseDn, back));
+    return _ok(renderMoveForm(session.username, user, ous, config.baseDn, back, csrfToken: _csrfFor(req)));
   } catch (e) {
     return _ok(renderError(session.username, 'Fehler: $e'));
   }
@@ -639,7 +647,7 @@ Future<Response> handleMoveUserPost(Request req, Config config) async {
   if (dn.isEmpty || targetOu.isEmpty) return Response.badRequest(body: 'Fehlende Parameter');
   try {
     await LdapClient(config, session).moveUser(dn, targetOu);
-    final rdn = dn.substring(0, dn.indexOf(','));
+    final rdn = _firstRdn(dn);
     final newDn = '$rdn,$targetOu';
     auditLog(session.username, 'User verschoben', newDn, 'nach: $targetOu');
     return Response.found('/user?dn=${Uri.encodeComponent(newDn)}&q=${Uri.encodeComponent(back)}');
@@ -745,7 +753,7 @@ Future<Response> handleCloneForm(Request req, Config config) async {
   try {
     final user = await LdapClient(config, session).getUserDetails(dn);
     if (user == null) return _ok(renderError(session.username, 'User nicht gefunden.'));
-    return _ok(renderCloneForm(session.username, user, back));
+    return _ok(renderCloneForm(session.username, user, back, csrfToken: _csrfFor(req)));
   } catch (e) {
     return _ok(renderError(session.username, 'Fehler: $e'));
   }
@@ -973,7 +981,7 @@ Future<Response> handleComputers(Request req, Config config) async {
   if (session == null) return Response.found('/login');
   try {
     final computers = await LdapClient(config, session).getComputers();
-    return _ok(renderComputers(session.username, computers));
+    return _ok(renderComputers(session.username, computers, csrfToken: _csrfFor(req)));
   } catch (e) {
     return _ok(renderError(session.username, 'Fehler: $e'));
   }
@@ -1042,9 +1050,11 @@ Future<Response> handleFavoriteToggle(Request req) async {
   final dn = params['dn'] ?? '';
   final name = params['name'] ?? dn;
   final back = params['back'] ?? '';
+  final from = params['from'] ?? '';
   if (dn.isNotEmpty) {
     toggleFavorite(token, dn, name);
   }
+  if (from.isNotEmpty) return Response.found(from);
   final redirect = back.isNotEmpty
       ? '/user?dn=${Uri.encodeComponent(dn)}&q=${Uri.encodeComponent(back)}'
       : '/user?dn=${Uri.encodeComponent(dn)}';
@@ -1057,8 +1067,22 @@ Future<Response> handleOrgChart(Request req, Config config) async {
   final session = _session(req);
   if (session == null) return Response.found('/login');
   final dn = req.url.queryParameters['dn'] ?? '';
-  if (dn.isEmpty) {
+  final name = req.url.queryParameters['name'] ?? '';
+
+  if (dn.isEmpty && name.isEmpty) {
     return _ok(renderOrgChartForm(session.username));
+  }
+
+  if (dn.isEmpty && name.isNotEmpty) {
+    final client = LdapClient(config, session);
+    final results = await client.searchUsers(name);
+    if (results.isEmpty) {
+      return _ok(renderOrgChartForm(session.username, error: 'Kein Benutzer gefunden: "$name"'));
+    }
+    if (results.length == 1) {
+      return Response.found('/orgchart?dn=${Uri.encodeComponent(results.first['dn'] as String)}');
+    }
+    return _ok(renderOrgChartPicker(session.username, name, results));
   }
   try {
     final client = LdapClient(config, session);

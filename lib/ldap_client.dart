@@ -600,11 +600,19 @@ class LdapClient {
   Future<void> moveUser(String userDn, String targetOuDn) async {
     final conn = await _connect();
     try {
-      final rdn = userDn.substring(0, userDn.indexOf(','));
-      await conn.modifyDN(_safeDn(userDn), DN(rdn), newSuperior: _safeDn(targetOuDn));
+      final rdn = _firstRdn(userDn);
+      await conn.modifyDN(_safeDn(userDn), _safeDn(rdn), newSuperior: _safeDn(targetOuDn));
     } finally {
       await conn.close();
     }
+  }
+
+  // Erstes RDN-Element extrahieren, escaped Kommas (\,) überspringen
+  static String _firstRdn(String dn) {
+    for (int i = 0; i < dn.length; i++) {
+      if (dn[i] == ',' && (i == 0 || dn[i - 1] != '\\')) return dn.substring(0, i);
+    }
+    return dn;
   }
 
   // ── FEATURE 6: Gruppen erstellen + löschen ──────────────────────────────────

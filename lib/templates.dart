@@ -111,6 +111,8 @@ const _darkCss = '''
 [data-theme="dark"] .surf { background: #1a1d27 !important; border-color: #2e3450 !important; color: #e2e8f0 !important; }
 [data-theme="dark"] .surf .surf-title { color: #e2e8f0 !important; }
 [data-theme="dark"] .surf .surf-sub   { color: #6b7694 !important; }
+[data-theme="dark"] .fav-btn { color: #f59e0b; }
+[data-theme="dark"] .ou-node.ou-selected { background:#1e3a5f; color:#93c5fd; }
 ''';
 
 String _layout(String username, String title, String body, {String active = '', String csrfToken = ''}) => '''
@@ -524,6 +526,14 @@ String _layout(String username, String title, String body, {String active = '', 
     .fav-btn:hover { opacity: 1; transform: scale(1.15); }
     .fav-btn.active { opacity: 1; }
 
+    /* ── OU Tree (shared) ── */
+    .ou-node { display:flex; align-items:center; gap:.3rem; padding:.3rem .5rem; border-radius:6px; cursor:pointer; transition:background .1s; user-select:none; }
+    .ou-node:hover { background:var(--gray-100); }
+    .ou-node.ou-selected { background:#dbeafe; color:#1d4ed8; }
+    .ou-tog { display:inline-flex; align-items:center; justify-content:center; width:1.2rem; flex-shrink:0; font-size:.8rem; color:var(--gray-400); }
+    .ou-children { padding-left:1.2rem; }
+    .ou-label { font:500 .88rem var(--sans); }
+
     ${'$_darkCss'}
 
     /* ── Responsive (Tablet/Mobile) ── */
@@ -627,6 +637,21 @@ function toggleDark() {
         b.style.cursor = 'not-allowed';
       });
     }, 0);
+  });
+  window.addEventListener('pageshow', function(e) {
+    if (e.persisted) {
+      document.querySelectorAll('button[type="submit"],input[type="submit"]').forEach(function(b) {
+        b.disabled = false;
+        b.style.opacity = '';
+        b.style.cursor = '';
+      });
+      document.querySelectorAll('a').forEach(function(a) {
+        a._clicked = false;
+        a.style.opacity = '';
+        a.style.pointerEvents = '';
+      });
+      document.querySelectorAll('form').forEach(function(f) { f._submitted = false; });
+    }
   });
   // Links: nach erstem Klick sperren (ausser # und javascript:)
   document.addEventListener('click', function(e) {
@@ -1271,7 +1296,16 @@ String renderDashboard(String username, Map<String, int> stats, List<AuditEntry>
     <div class="card card-pad" style="margin-bottom:1.5rem;">
       <div class="card-section-title" style="margin-bottom:.75rem;">Favoriten</div>
       <div style="display:flex;flex-wrap:wrap;gap:.5rem;">
-        ${favorites.map((f) => '<a href="/user?dn=${Uri.encodeComponent(f.dn)}" style="display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .75rem;background:var(--blue-lt);border:1px solid rgba(37,99,235,.25);border-radius:20px;text-decoration:none;font:500 .82rem var(--sans);color:var(--blue);transition:all .12s;" onmouseover="this.style.background=\'rgba(37,99,235,.2)\'" onmouseout="this.style.background=\'var(--blue-lt)\'">⭐ ${_esc(f.name)}</a>').join('\n')}
+        ${favorites.map((f) => '''<span style="display:inline-flex;align-items:center;gap:0;background:var(--blue-lt);border:1px solid rgba(37,99,235,.25);border-radius:20px;overflow:hidden;">
+          <a href="/user?dn=${Uri.encodeComponent(f.dn)}" style="display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .6rem .35rem .75rem;text-decoration:none;font:500 .82rem var(--sans);color:var(--blue);transition:background .12s;" onmouseover="this.style.background=\'rgba(37,99,235,.15)\'" onmouseout="this.style.background=\'\'">&#9733; ${_esc(f.name)}</a>
+          <form method="post" action="/favorite/toggle" style="margin:0;display:inline;">
+            <input type="hidden" name="dn" value="${_esc(f.dn)}">
+            <input type="hidden" name="name" value="${_esc(f.name)}">
+            <input type="hidden" name="from" value="/">
+            <input type="hidden" name="_csrf" value="${_esc(csrfToken)}">
+            <button type="submit" style="background:none;border:none;border-left:1px solid rgba(37,99,235,.2);padding:.35rem .55rem;cursor:pointer;color:var(--blue);font-size:.85rem;line-height:1;transition:background .12s;" onmouseover="this.style.background=\'rgba(239,68,68,.12)\';this.style.color=\'#ef4444\'" onmouseout="this.style.background=\'\';this.style.color=\'var(--blue)\'" title="Aus Favoriten entfernen">&times;</button>
+          </form>
+        </span>''').join('\n')}
       </div>
     </div>''' : ''}
 
@@ -1327,7 +1361,7 @@ String renderDashboard(String username, Map<String, int> stats, List<AuditEntry>
 // ── Schnellansichten ──────────────────────────────────────────────────────────
 
 String renderQuickUsers(String username, String title, String subtitle,
-    List<Map<String, dynamic>> users, {String? extraCol, String backHref = '/'}) {
+    List<Map<String, dynamic>> users, {String? extraCol, String backHref = '/', String csrfToken = ''}) {
   final isLocked = extraCol == 'Entsperren';
   final isDisabled = extraCol == 'Aktivieren';
   final isPwExpiring = extraCol == 'Tage';
@@ -1399,7 +1433,7 @@ String renderQuickUsers(String username, String title, String subtitle,
         </table>
         </div>'''}
     </div>
-  ''', active: activeNav);
+  ''', active: activeNav, csrfToken: csrfToken);
 }
 
 // ── Suchergebnisse (kompakte Liste) ──────────────────────────────────────────
@@ -1680,6 +1714,7 @@ String renderUserDetail(String username, Map<String, dynamic> u, String back,
       <input type="hidden" name="dn" value="${_esc(dn)}">
       <input type="hidden" name="back" value="${_esc(back)}">
       <input type="hidden" name="photo_b64" id="photo-b64">
+      <input type="hidden" name="_csrf" value="${_esc(csrfToken)}">
       <label class="btn btn-ghost btn-sm" style="cursor:pointer;" title="Foto auswählen – wird automatisch hochgeladen">
         Foto ändern
         <input type="file" accept="image/*" style="display:none" id="photo-file">
@@ -1689,7 +1724,8 @@ String renderUserDetail(String username, Map<String, dynamic> u, String back,
     <form method="post" action="/photo/delete" style="margin:0">
       <input type="hidden" name="dn" value="${_esc(dn)}">
       <input type="hidden" name="back" value="${_esc(back)}">
-      <button type="submit" class="btn btn-danger btn-sm" title="Foto löschen"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="2,4 14,4"/><path d="M5 4V2.5h6V4M6 7v5M10 7v5" stroke-linecap="round"/><rect x="3" y="4" width="10" height="10" rx="1.5"/></svg></button>
+      <input type="hidden" name="_csrf" value="${_esc(csrfToken)}">
+      <button type="submit" class="btn btn-danger btn-sm" title="Foto löschen"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="2,4 14,4"/><path d="M5 4V2.5h6V4M6 7v5M10 7v5" stroke-linecap="round"/><rect x="3" y="4" width="10" height="10" rx="1.5"/></svg> Foto löschen</button>
     </form>''' : ''}
   ''';
 
@@ -1957,7 +1993,7 @@ String renderGroupPicker(String username, String userDn, String back,
 // ── Gruppen ───────────────────────────────────────────────────────────────────
 
 String renderGroups(String username, String query, List<Map<String, dynamic>> groups,
-    List<Map<String, dynamic>> ous) {
+    List<Map<String, dynamic>> ous, {String csrfToken = ''}) {
   final rows = groups.map((g) {
     final cn = _esc(g['cn'] ?? '–');
     final desc = _esc(g['description'] ?? '');
@@ -1978,33 +2014,36 @@ String renderGroups(String username, String query, List<Map<String, dynamic>> gr
     </tr>''';
   }).join('\n');
 
-  final ouOptions = ous
-      .toList()
-      ..sort((a, b) => (a['ou'] ?? a['dn'] ?? '').compareTo(b['ou'] ?? b['dn'] ?? ''));
-  final ouOptHtml = ouOptions.map((o) {
-    final label = _esc(o['ou'] as String? ?? o['dn'] as String? ?? '');
-    final val = _esc(o['dn'] as String? ?? '');
-    return '<option value="$val">$label</option>';
-  }).join('\n');
+  final grpOusJson = jsonEncode(ous.map((o) => {
+    'dn': o['dn'] as String? ?? '',
+    'ou': o['ou'] as String? ?? o['dn'] as String? ?? '',
+  }).toList());
 
   return _layout(username, 'Gruppen', '''
     <div class="card card-pad" style="margin-bottom:1rem;">
       <p style="font:600 13px var(--sans);color:var(--gray-700);margin-bottom:.85rem;">Neue Gruppe erstellen</p>
-      <form method="post" action="/group/create" style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:.65rem;align-items:end;">
-        <div>
-          <label style="display:block;font:600 .75rem var(--mono);color:var(--gray-500);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.06em;">Name *</label>
-          <input type="text" name="name" required placeholder="z.B. IT-Admins" style="width:100%;padding:.5rem .75rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.9rem;">
+      <form method="post" action="/group/create" onsubmit="return grpOuCheck()">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.65rem;">
+          <div>
+            <label style="display:block;font:600 .75rem var(--mono);color:var(--gray-500);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.06em;">Name *</label>
+            <input type="text" name="name" required placeholder="z.B. IT-Admins" style="width:100%;padding:.5rem .75rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.9rem;">
+          </div>
+          <div>
+            <label style="display:block;font:600 .75rem var(--mono);color:var(--gray-500);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.06em;">Beschreibung</label>
+            <input type="text" name="description" placeholder="Optional..." style="width:100%;padding:.5rem .75rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.9rem;">
+          </div>
         </div>
-        <div>
+        <div style="margin-bottom:.65rem;">
           <label style="display:block;font:600 .75rem var(--mono);color:var(--gray-500);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.06em;">OU *</label>
-          <select name="ou_dn" required style="width:100%;padding:.5rem .75rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.9rem;background:white;">
-            <option value="">OU wählen...</option>
-            $ouOptHtml
-          </select>
-        </div>
-        <div>
-          <label style="display:block;font:600 .75rem var(--mono);color:var(--gray-500);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.06em;">Beschreibung</label>
-          <input type="text" name="description" placeholder="Optional..." style="width:100%;padding:.5rem .75rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.9rem;">
+          <input type="hidden" name="ou_dn" id="grp-ou-value">
+          <div id="grp-ou-display" style="min-height:2rem;padding:.4rem .7rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.85rem;background:var(--gray-50,#f9fafb);color:var(--gray-500);margin-bottom:.35rem;cursor:pointer;" onclick="document.getElementById('grp-ou-wrap').style.display=document.getElementById('grp-ou-wrap').style.display==='none'?'':'none'">OU wählen… (klicken)</div>
+          <div id="grp-ou-wrap" style="display:none;">
+            <input id="grp-ou-filter" type="text" placeholder="OU filtern…" autocomplete="off"
+              style="width:100%;padding:.4rem .7rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.85rem;margin-bottom:.3rem;box-sizing:border-box;">
+            <div style="border:1.5px solid var(--gray-200);border-radius:8px;max-height:260px;overflow-y:auto;padding:.3rem;background:var(--gray-50,#f9fafb);">
+              <div id="grp-ou-tree"></div>
+            </div>
+          </div>
         </div>
         <button type="submit" class="btn btn-primary">+ Erstellen</button>
       </form>
@@ -2024,7 +2063,79 @@ String renderGroups(String username, String query, List<Map<String, dynamic>> gr
         <tbody>$rows</tbody>
       </table>
     </div>''' : ''}
-  ''', active: 'groups');
+    <script>
+    (function() {
+      const OUS = $grpOusJson;
+      const byDn = {};
+      OUS.forEach((o, i) => { o.idx = i; o.children = []; byDn[o.dn] = o; });
+      const roots = [];
+      OUS.forEach(o => {
+        const comma = o.dn.indexOf(',');
+        if (comma < 0) { roots.push(o); return; }
+        const parentDn = o.dn.substring(comma + 1);
+        const parent = byDn[parentDn];
+        if (parent) parent.children.push(o); else roots.push(o);
+      });
+      function sortR(arr) {
+        arr.sort((a,b) => a.ou.localeCompare(b.ou,undefined,{sensitivity:'base'}));
+        arr.forEach(n => sortR(n.children));
+      }
+      sortR(roots);
+      let selIdx = -1;
+      function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+      function renderNode(o) {
+        const hasC = o.children.length > 0;
+        return '<div>'
+          + '<div class="ou-node" id="gon-' + o.idx + '" onclick="grpOuSel(' + o.idx + ')">'
+          + '<span class="ou-tog"' + (hasC ? ' onclick="event.stopPropagation();grpOuTog(' + o.idx + ')" data-grp-idx="' + o.idx + '"' : '') + '>'
+          + (hasC ? '▸' : '') + '</span>'
+          + '<span class="ou-label">' + esc(o.ou) + '</span>'
+          + '</div>'
+          + (hasC ? '<div id="goc-' + o.idx + '" class="ou-children" style="display:none">' + o.children.map(renderNode).join('') + '</div>' : '')
+          + '</div>';
+      }
+      document.getElementById('grp-ou-tree').innerHTML = roots.map(renderNode).join('');
+      window.grpOuTog = function(idx) {
+        const el = document.getElementById('goc-' + idx);
+        if (!el) return;
+        const show = el.style.display === 'none';
+        el.style.display = show ? '' : 'none';
+        const btn = document.querySelector('.ou-tog[data-grp-idx="' + idx + '"]');
+        if (btn) btn.textContent = show ? '▾' : '▸';
+      };
+      window.grpOuSel = function(idx) {
+        document.querySelectorAll('#grp-ou-tree .ou-node.ou-selected').forEach(n => n.classList.remove('ou-selected'));
+        const o = OUS[idx];
+        selIdx = idx;
+        const el = document.getElementById('gon-' + idx);
+        if (el) el.classList.add('ou-selected');
+        document.getElementById('grp-ou-value').value = o.dn;
+        document.getElementById('grp-ou-display').innerHTML = '<strong>' + esc(o.ou) + '</strong> <span style="font:.72rem var(--mono);color:var(--gray-400);margin-left:.4rem">' + esc(o.dn) + '</span>';
+        document.getElementById('grp-ou-wrap').style.display = 'none';
+      };
+      window.grpOuCheck = function() {
+        if (!document.getElementById('grp-ou-value').value) {
+          alert('Bitte eine OU auswählen.');
+          document.getElementById('grp-ou-wrap').style.display = '';
+          return false;
+        }
+        return true;
+      };
+      document.getElementById('grp-ou-filter').addEventListener('input', function() {
+        const q = this.value.toLowerCase().trim();
+        if (!q) { document.getElementById('grp-ou-tree').innerHTML = roots.map(renderNode).join(''); return; }
+        const matches = OUS.filter(o => o.ou.toLowerCase().includes(q) || o.dn.toLowerCase().includes(q));
+        document.getElementById('grp-ou-tree').innerHTML = matches.map(o =>
+          '<div class="ou-node' + (selIdx === o.idx ? ' ou-selected' : '') + '" id="gon-' + o.idx + '" onclick="grpOuSel(' + o.idx + ')">'
+          + '<span class="ou-tog"></span>'
+          + '<span class="ou-label">' + esc(o.ou) + '</span>'
+          + '<span style="font:.72rem var(--mono);color:var(--gray-400);margin-left:.4rem">' + esc(o.dn) + '</span>'
+          + '</div>'
+        ).join('');
+      });
+    })();
+    </script>
+  ''', active: 'groups', csrfToken: csrfToken);
 }
 
 String renderGroupMembers(String username, String groupName, String groupDn,
@@ -2287,7 +2398,7 @@ String renderAuditLog(String username, List<AuditEntry> entries) {
 
 // ── Einstellungen ────────────────────────────────────────────────────────────
 
-String renderSettings(String username, Map<String, bool> settings, {String? msg}) {
+String renderSettings(String username, Map<String, bool> settings, {String? msg, String csrfToken = ''}) {
   final readOnlySelf = settings['readonly_self'] ?? false;
 
   String toggle(String key, bool value, String label, String desc, String icon) {
@@ -2492,12 +2603,12 @@ String renderSettings(String username, Map<String, bool> settings, {String? msg}
     <p style="font:400 .78rem var(--mono);color:var(--gray-400);text-align:center;margin-top:.75rem;">
       Einstellungen werden bei Session-Ende zurückgesetzt.
     </p>
-  ''', active: 'settings');
+  ''', active: 'settings', csrfToken: csrfToken);
 }
 
 // ── User kopieren ─────────────────────────────────────────────────────────────
 
-String renderCloneForm(String username, Map<String, dynamic> u, String back) {
+String renderCloneForm(String username, Map<String, dynamic> u, String back, {String csrfToken = ''}) {
   final dn = u['dn'] as String? ?? '';
   final cn = _esc(u['cn'] as String? ?? '');
   final sam = _esc(u['sAMAccountName'] as String? ?? '');
@@ -2560,12 +2671,12 @@ String renderCloneForm(String username, Map<String, dynamic> u, String back) {
         </div>
       </form>
     </div>
-  ''', active: 'search');
+  ''', active: 'search', csrfToken: csrfToken);
 }
 
 // ── User verschieben ─────────────────────────────────────────────────────────
 
-String renderMoveForm(String username, Map<String, dynamic> u, List<Map<String, dynamic>> ous, String baseDn, String back) {
+String renderMoveForm(String username, Map<String, dynamic> u, List<Map<String, dynamic>> ous, String baseDn, String back, {String csrfToken = ''}) {
   final dn = u['dn'] as String? ?? '';
   final cn = _esc(u['cn'] as String? ?? '');
   final sam = _esc(u['sAMAccountName'] as String? ?? '');
@@ -2592,7 +2703,7 @@ String renderMoveForm(String username, Map<String, dynamic> u, List<Map<String, 
              <input type="hidden" name="target_ou" value="${_esc(lagerOu)}">
              <button type="submit"
                style="background:#f97316;color:#fff;border:none;border-radius:8px;padding:.55rem 1.2rem;font:700 .9rem var(--sans);cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(249,115,22,.4);letter-spacing:.01em;">
-               &#128230; Ins Lager verschieben
+               Ins Lager verschieben
              </button>
            </form>'''}
     </div>
@@ -2753,7 +2864,7 @@ String renderMoveForm(String username, Map<String, dynamic> u, List<Map<String, 
       renderTree();
     })();
     </script>
-  ''', active: 'search');
+  ''', active: 'search', csrfToken: csrfToken);
 }
 
 // ── Hilfsfunktionen ──────────────────────────────────────────────────────────
@@ -3243,7 +3354,7 @@ String renderEffectiveGroups(String username, Map<String, dynamic>? user, String
 
 // ── Feature: Computer-Browser ─────────────────────────────────────────────────
 
-String renderComputers(String username, List<Map<String, dynamic>> computers) {
+String renderComputers(String username, List<Map<String, dynamic>> computers, {String csrfToken = ''}) {
   final lagerOu = _appLagerOu;
   final rows = computers.map((c) {
     final cn = _esc(c['cn'] ?? '–');
@@ -3262,7 +3373,7 @@ String renderComputers(String username, List<Map<String, dynamic>> computers) {
              <input type="hidden" name="target_ou" value="${_esc(lagerOu)}">
              <button type="submit"
                style="background:#f97316;color:#fff;border:none;border-radius:6px;padding:.35rem .75rem;font:600 .78rem var(--sans);cursor:pointer;white-space:nowrap;letter-spacing:.01em;box-shadow:0 1px 4px rgba(249,115,22,.35);"
-               title="Ins Lager verschieben">&#128230; Ins Lager</button>
+               title="Ins Lager verschieben">Ins Lager</button>
            </form>''';
     return '<tr>'
         '<td><strong>$cn</strong></td>'
@@ -3305,21 +3416,20 @@ String renderComputers(String username, List<Map<String, dynamic>> computers) {
       });
     }
     </script>
-  ''', active: 'computers');
+  ''', active: 'computers', csrfToken: csrfToken);
 }
 
 // ── Feature: Erweiterte Suche ─────────────────────────────────────────────────
 
 String renderAdvancedSearch(String username, List<Map<String, dynamic>> ous,
     Map<String, String> params, List<Map<String, dynamic>>? results) {
-  final ouOptions = ous.toList()
-      ..sort((a, b) => (a['ou'] ?? a['dn'] ?? '').compareTo(b['ou'] ?? b['dn'] ?? ''));
-  final ouOptHtml = ouOptions.map((o) {
-    final label = _esc(o['ou'] as String? ?? o['dn'] as String? ?? '');
-    final val = _esc(o['dn'] as String? ?? '');
-    final selected = val == _esc(params['ou'] ?? '') ? ' selected' : '';
-    return '<option value="$val"$selected>$label</option>';
-  }).join('\n');
+  final ousData = ous.map((o) => {
+    'dn': o['dn'] as String? ?? '',
+    'ou': o['ou'] as String? ?? o['dn'] as String? ?? '',
+  }).toList();
+  final ousJson = jsonEncode(ousData);
+  final selectedOu = params['ou'] ?? '';
+  final selectedOuJson = jsonEncode(selectedOu);
 
   final statusOptions = [
     ('all', 'Alle'), ('active', 'Aktiv'), ('disabled', 'Deaktiviert'), ('locked', 'Gesperrt'),
@@ -3384,10 +3494,16 @@ String renderAdvancedSearch(String username, List<Map<String, dynamic>> ous,
           </div>
           <div>
             <label style="display:block;font:600 .8rem var(--sans);color:var(--gray-600);margin-bottom:.3rem;">OU einschränken</label>
-            <select name="ou" style="width:100%;padding:.5rem .8rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.9rem;background:white;">
-              <option value="">Alle OUs</option>
-              $ouOptHtml
-            </select>
+            <input type="hidden" name="ou" id="adv-ou-value" value="${_esc(selectedOu)}">
+            <div id="adv-ou-display" style="min-height:2rem;padding:.4rem .7rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.85rem;background:var(--gray-50,#f9fafb);color:var(--gray-500);margin-bottom:.35rem;cursor:pointer;" onclick="document.getElementById('adv-ou-wrap').style.display=document.getElementById('adv-ou-wrap').style.display==='none'?'':'none'">Alle OUs (klicken zum Auswählen)</div>
+            <div id="adv-ou-wrap">
+              <input id="adv-ou-filter" type="text" placeholder="OU filtern…" autocomplete="off"
+                style="width:100%;padding:.4rem .7rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.85rem;margin-bottom:.3rem;box-sizing:border-box;">
+              <div style="border:1.5px solid var(--gray-200);border-radius:8px;max-height:280px;overflow-y:auto;padding:.3rem;background:var(--gray-50,#f9fafb);">
+                <div id="adv-ou-tree"></div>
+              </div>
+              <button type="button" onclick="advOuClear()" style="margin-top:.3rem;font-size:.78rem;background:none;border:none;color:var(--blue);cursor:pointer;padding:0;">Alle OUs (Auswahl aufheben)</button>
+            </div>
           </div>
           <div>
             <label style="display:block;font:600 .8rem var(--sans);color:var(--gray-600);margin-bottom:.3rem;">Status</label>
@@ -3403,12 +3519,107 @@ String renderAdvancedSearch(String username, List<Map<String, dynamic>> ous,
       </form>
     </div>
     ${resultsHtml ?? ''}
+    <script>
+    (function() {
+      const OUS = $ousJson;
+      const SEL_OU = $selectedOuJson;
+      const byDn = {};
+      OUS.forEach((o, i) => { o.idx = i; o.children = []; byDn[o.dn] = o; });
+      const roots = [];
+      OUS.forEach(o => {
+        const comma = o.dn.indexOf(',');
+        if (comma < 0) { roots.push(o); return; }
+        const parentDn = o.dn.substring(comma + 1);
+        const parent = byDn[parentDn];
+        if (parent) parent.children.push(o); else roots.push(o);
+      });
+      function sortR(arr) {
+        arr.sort((a,b) => a.ou.localeCompare(b.ou,undefined,{sensitivity:'base'}));
+        arr.forEach(n => sortR(n.children));
+      }
+      sortR(roots);
+      const expanded = new Set();
+      function markPath(node) {
+        if (node.dn === SEL_OU) return true;
+        for (const c of node.children) { if (markPath(c)) { expanded.add(node.idx); return true; } }
+        return false;
+      }
+      roots.forEach(markPath);
+      let selIdx = -1;
+      function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+      function renderNode(o) {
+        const hasC = o.children.length > 0;
+        const isExp = expanded.has(o.idx);
+        const isSel = o.dn === SEL_OU;
+        return '<div>'
+          + '<div class="ou-node' + (isSel ? ' ou-selected' : '') + '" id="aon-' + o.idx + '" onclick="advOuSel(' + o.idx + ')">'
+          + '<span class="ou-tog"' + (hasC ? ' onclick="event.stopPropagation();advOuTog(' + o.idx + ')" data-idx="' + o.idx + '"' : '') + '>'
+          + (hasC ? (isExp ? '▾' : '▸') : '') + '</span>'
+          + '<span class="ou-label">' + esc(o.ou) + '</span>'
+          + '</div>'
+          + (hasC ? '<div id="aoc-' + o.idx + '" class="ou-children" style="' + (isExp ? '' : 'display:none') + '">' + o.children.map(renderNode).join('') + '</div>' : '')
+          + '</div>';
+      }
+      function renderTree() {
+        document.getElementById('adv-ou-tree').innerHTML = roots.map(renderNode).join('');
+        if (SEL_OU) {
+          const cur = OUS.find(o => o.dn === SEL_OU);
+          if (cur) { selIdx = cur.idx; updateDisplay(cur); }
+        }
+      }
+      function updateDisplay(o) {
+        const disp = document.getElementById('adv-ou-display');
+        if (o) disp.innerHTML = '<strong>' + esc(o.ou) + '</strong> <span style="font:.72rem var(--mono);color:var(--gray-400);margin-left:.4rem">' + esc(o.dn) + '</span>';
+        else disp.textContent = 'Alle OUs (klicken zum Auswählen)';
+      }
+      window.advOuTog = function(idx) {
+        const el = document.getElementById('aoc-' + idx);
+        if (!el) return;
+        const show = el.style.display === 'none';
+        el.style.display = show ? '' : 'none';
+        const btn = document.querySelector('.ou-tog[data-idx="' + idx + '"]');
+        if (btn) btn.textContent = show ? '▾' : '▸';
+      };
+      window.advOuSel = function(idx) {
+        document.querySelectorAll('#adv-ou-tree .ou-node.ou-selected').forEach(n => n.classList.remove('ou-selected'));
+        const o = OUS[idx];
+        selIdx = idx;
+        const el = document.getElementById('aon-' + idx);
+        if (el) { el.classList.add('ou-selected'); el.scrollIntoView({block:'nearest'}); }
+        document.getElementById('adv-ou-value').value = o.dn;
+        updateDisplay(o);
+        document.getElementById('adv-ou-wrap').style.display = 'none';
+      };
+      window.advOuClear = function() {
+        document.querySelectorAll('#adv-ou-tree .ou-node.ou-selected').forEach(n => n.classList.remove('ou-selected'));
+        selIdx = -1;
+        document.getElementById('adv-ou-value').value = '';
+        updateDisplay(null);
+        document.getElementById('adv-ou-wrap').style.display = 'none';
+      };
+      document.getElementById('adv-ou-filter').addEventListener('input', function() {
+        const q = this.value.toLowerCase().trim();
+        if (!q) { renderTree(); return; }
+        const matches = OUS.filter(o => o.ou.toLowerCase().includes(q) || o.dn.toLowerCase().includes(q));
+        document.getElementById('adv-ou-tree').innerHTML = matches.map(o =>
+          '<div class="ou-node' + (selIdx === o.idx ? ' ou-selected' : '') + '" id="aon-' + o.idx + '" onclick="advOuSel(' + o.idx + ')">'
+          + '<span class="ou-tog"></span>'
+          + '<span class="ou-label">' + esc(o.ou) + '</span>'
+          + '<span style="font:.72rem var(--mono);color:var(--gray-400);margin-left:.4rem">' + esc(o.dn) + '</span>'
+          + '</div>'
+        ).join('');
+      });
+      renderTree();
+      // Standardmässig versteckt, nur aufklappen wenn kein SEL_OU
+      if (!SEL_OU) document.getElementById('adv-ou-wrap').style.display = 'none';
+    })();
+    </script>
   ''', active: 'advsearch');
 }
 
 // ── Feature 1: Org-Chart ──────────────────────────────────────────────────────
 
-String renderOrgChartForm(String username) => _layout(username, 'Org-Chart', '''
+String renderOrgChartForm(String username, {String error = ''}) => _layout(username, 'Org-Chart', '''
   <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
     <a href="javascript:history.back()" class="btn btn-ghost btn-sm">← Zurück</a>
     <div>
@@ -3416,14 +3627,39 @@ String renderOrgChartForm(String username) => _layout(username, 'Org-Chart', '''
       <p style="font-size:.78rem;color:var(--gray-400);">Vorgesetzten-Kette und direkte Berichte anzeigen</p>
     </div>
   </div>
+  ${error.isNotEmpty ? '<div class="alert alert-error" style="margin-bottom:1rem;">${_esc(error)}</div>' : ''}
   <div class="card card-pad">
     <form action="/orgchart" method="get" class="search-box">
-      <input type="text" name="dn" placeholder="Distinguished Name eingeben (z.B. CN=Max Muster,OU=Users,DC=...)" autofocus style="font-size:.85rem;">
+      <input type="text" name="name" placeholder="Name oder Benutzername eingeben…" autofocus style="font-size:.85rem;">
       <button type="submit" class="btn btn-primary">Anzeigen</button>
     </form>
-    <p style="font-size:.78rem;color:var(--gray-400);margin-top:.75rem;">Tipp: Zuerst einen Benutzer suchen, dann via "Org-Chart" öffnen.</p>
   </div>
 ''', active: 'orgchart');
+
+String renderOrgChartPicker(String username, String query, List<Map<String, dynamic>> results) {
+  final rows = results.map((u) {
+    final dn = u['dn'] as String? ?? '';
+    final cn = _esc(u['cn'] ?? '–');
+    final sam = _esc(u['sAMAccountName'] ?? '–');
+    final dept = _esc(u['department'] ?? '–');
+    return '<tr style="cursor:pointer;" onclick="location.href=\'/orgchart?dn=${Uri.encodeComponent(dn)}\'">'
+        '<td><strong>$cn</strong></td><td>$sam</td><td>$dept</td>'
+        '<td><a href="/orgchart?dn=${Uri.encodeComponent(dn)}" class="btn btn-ghost btn-sm">Org-Chart</a></td>'
+        '</tr>';
+  }).join('\n');
+  return _layout(username, 'Org-Chart', '''
+  <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
+    <a href="/orgchart" class="btn btn-ghost btn-sm">← Zurück</a>
+    <h2 style="font-size:1rem;font-weight:600;">Mehrere Treffer für „${_esc(query)}"</h2>
+  </div>
+  <div class="card">
+    <table class="result-table">
+      <thead><tr><th>Name</th><th>Benutzername</th><th>Abteilung</th><th></th></tr></thead>
+      <tbody>$rows</tbody>
+    </table>
+  </div>
+''', active: 'orgchart');
+}
 
 String _orgCard(Map<String, dynamic> u, {bool isMain = false, bool isManager = false}) {
   final dn = u['dn'] as String? ?? '';
